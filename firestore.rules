@@ -1,0 +1,32 @@
+rules_version = '2';
+// Reglas de seguridad de Café Campus.
+// RN-A5: solo la administradora modifica productos y precios.
+// RN-A4: los precios son enteros positivos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() { return request.auth != null; }
+    function rol() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol; }
+    function esAdmin() { return autenticado() && rol() == 'administradora'; }
+
+    function productoValido(p) {
+      return p.keys().hasAll(['nombre', 'categoria', 'precio', 'disponible'])
+        && p.nombre is string && p.nombre.size() >= 3 && p.nombre.size() <= 60
+        && p.categoria in ['Bebidas calientes', 'Bebidas frías', 'Panadería', 'Almuerzos']
+        && p.precio is int && p.precio > 0 && p.precio <= 1000000
+        && p.disponible is bool;
+    }
+
+    // Cada usuario lee solo su propio perfil; los roles se asignan desde la consola o el script de datos.
+    match /users/{uid} {
+      allow read: if autenticado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /products/{id} {
+      allow read: if autenticado();
+      allow create, update: if esAdmin() && productoValido(request.resource.data);
+      allow delete: if esAdmin();
+    }
+  }
+}
