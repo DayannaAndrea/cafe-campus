@@ -1,0 +1,7 @@
+import {readLocal,writeLocal,subscribeLocal} from './localStore';
+const KEY='orders';
+function seed(){const now=Date.now();return[{id:'o1',ticket:'1041',customer:'Valentina Ríos',kind:'mostrador',items:[{name:'Café con leche',qty:1,price:3500},{name:'Pandebono',qty:2,price:2500}],total:8500,status:'recibido',created:new Date(now-4*60000).toISOString(),payment:null},{id:'o2',ticket:'1040',customer:'Andrés Mora',kind:'anticipado',pickup:new Date(now+20*60000).toISOString(),items:[{name:'Almuerzo del día',qty:1,price:14000}],total:14000,status:'preparacion',created:new Date(now-12*60000).toISOString(),payment:null},{id:'o3',ticket:'1039',customer:'Camila Torres',kind:'mostrador',items:[{name:'Café tinto 7 oz',qty:2,price:2000}],total:4000,status:'listo',created:new Date(now-25*60000).toISOString(),payment:null}]}
+export const getOrders=()=>readLocal(KEY,seed());
+export const watchOrders=(fn)=>subscribeLocal(KEY,fn);
+export async function createOrder({customer,items,kind='mostrador',pickup=null}){const current=getOrders();const total=items.reduce((sum,item)=>sum+item.price*item.qty,0);const ticket=String(1042+current.length-3);const order={id:`o${Date.now()}`,ticket,customer:customer||'Cliente en caja',kind,pickup,items,total,status:'recibido',created:new Date().toISOString(),payment:null};writeLocal(KEY,[order,...current]);return order}
+export async function updateOrder(id,patch){const next=getOrders().map(order=>order.id===id?{...order,...patch}:order);writeLocal(KEY,next)}

@@ -1,21 +1,11 @@
+import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
-import Menu from './pages/Menu';
-
-function Privada({ children }) {
-  const { usuario, cargando } = useAuth();
-  if (cargando) return <p className="centro">Cargando…</p>;
-  return usuario ? children : <Navigate to="/login" replace />;
-}
+import Workspace from './pages/Workspace';
 
 export default function App() {
-  const { usuario } = useAuth();
-  return (
-    <Routes>
-      <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={<Privada><Menu /></Privada>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+  const { user, loading } = useAuth();
+  if (loading) return <div className="boot">Preparando Café Campus…</div>;
+  return <Routes><Route path="/login" element={user ? <Navigate to="/" replace/> : <Login/>}/><Route path="/*" element={user ? <Workspace/> : <Navigate to="/login" replace/>}/></Routes>;
 }

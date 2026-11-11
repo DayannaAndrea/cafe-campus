@@ -1,0 +1,3 @@
+export const CATEGORIES=['Bebidas calientes','Bebidas frías','Panadería','Almuerzos'];
+export const money=(v)=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v)||0);
+export function validateProduct(item){const errors={};const name=(item.name||'').trim();if(name.length<3||name.length>60)errors.name='El nombre debe tener entre 3 y 60 caracteres.';if(!CATEGORIES.includes(item.category))errors.category='Elige una categoría.';if(!Number.isInteger(Number(item.price))||Number(item.price)<1||Number(item.price)>1000000)errors.price='Ingresa un precio entero entre $1 y $1.000.000.';return errors}
