@@ -24,7 +24,7 @@ service cloud.firestore {
     }
 
     match /products/{id} {
-      allow read: if autenticado();
+      allow read: if resource.data.disponible == true || autenticado();
       allow create, update: if esAdmin() && productoValido(request.resource.data);
       allow delete: if esAdmin();
     }
