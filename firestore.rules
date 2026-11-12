@@ -1,31 +1,174 @@
 rules_version = '2';
-// Reglas de seguridad de Café Campus.
-// RN-A5: solo la administradora modifica productos y precios.
-// RN-A4: los precios son enteros positivos.
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function autenticado() { return request.auth != null; }
-    function rol() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol; }
-    function esAdmin() { return autenticado() && rol() == 'administradora'; }
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function rol() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.rol;
+    }
+
+    function esAdmin() {
+      return autenticado() && rol() == 'administradora';
+    }
+
+    function esPersonal() {
+      return autenticado()
+        && rol() in ['administradora', 'cajero'];
+    }
 
     function productoValido(p) {
-      return p.keys().hasAll(['nombre', 'categoria', 'precio', 'disponible'])
-        && p.nombre is string && p.nombre.size() >= 3 && p.nombre.size() <= 60
-        && p.categoria in ['Bebidas calientes', 'Bebidas frías', 'Panadería', 'Almuerzos']
-        && p.precio is int && p.precio > 0 && p.precio <= 1000000
+      return p.keys().hasAll([
+          'nombre', 'categoria', 'precio', 'disponible'
+        ])
+        && p.nombre is string
+        && p.nombre.size() >= 3
+        && p.nombre.size() <= 60
+        && p.categoria in [
+          'Bebidas calientes',
+          'Bebidas frías',
+          'Panadería',
+          'Almuerzos'
+        ]
+        && p.precio is int
+        && p.precio > 0
+        && p.precio <= 1000000
         && p.disponible is bool;
     }
 
-    // Cada usuario lee solo su propio perfil; los roles se asignan desde la consola o el script de datos.
+    function lineaValida(item) {
+      let ruta = /databases/$(database)/documents/products/$(item.id);
+      return item.keys().hasAll(['id', 'name', 'price', 'qty'])
+        && item.id is string
+        && item.name is string
+        && item.price is int
+        && item.qty is int
+        && item.qty >= 1
+        && item.qty <= 50
+        && exists(ruta)
+        && get(ruta).data.disponible == true
+        && get(ruta).data.nombre == item.name
+        && get(ruta).data.precio == item.price;
+    }
+
+    function lineasValidas(items) {
+      return items is list
+        && items.size() >= 1
+        && items.size() <= 6
+        && lineaValida(items[0])
+        && (items.size() < 2 || lineaValida(items[1]))
+        && (items.size() < 3 || lineaValida(items[2]))
+        && (items.size() < 4 || lineaValida(items[3]))
+        && (items.size() < 5 || lineaValida(items[4]))
+        && (items.size() < 6 || lineaValida(items[5]));
+    }
+
+    function totalValido(d) {
+      return d.total is int
+        && d.total > 0
+        && d.total <= 6000000
+        && d.total == (
+          d.items[0].price * d.items[0].qty
+          + (d.items.size() >= 2 ? d.items[1].price * d.items[1].qty : 0)
+          + (d.items.size() >= 3 ? d.items[2].price * d.items[2].qty : 0)
+          + (d.items.size() >= 4 ? d.items[3].price * d.items[3].qty : 0)
+          + (d.items.size() >= 5 ? d.items[4].price * d.items[4].qty : 0)
+          + (d.items.size() >= 6 ? d.items[5].price * d.items[5].qty : 0)
+        );
+    }
+
+    function pedidoValido(d, id) {
+      return d.keys().hasAll([
+          'ticket',
+          'trackingId',
+          'customer',
+          'kind',
+          'pickup',
+          'items',
+          'total',
+          'status',
+          'created',
+          'payment',
+          'createdBy'
+        ])
+        && d.keys().hasOnly([
+          'ticket',
+          'trackingId',
+          'customer',
+          'kind',
+          'pickup',
+          'items',
+          'total',
+          'status',
+          'created',
+          'payment',
+          'createdBy'
+        ])
+        && d.trackingId == id
+        && d.ticket is string
+        && d.ticket.matches('^[0-9]{8}$')
+        && d.customer is string
+        && d.customer.size() >= 2
+        && d.customer.size() <= 80
+        && d.kind in ['mostrador', 'anticipado']
+        && (d.pickup == null || d.pickup is string)
+        && lineasValidas(d.items)
+        && totalValido(d)
+        && d.status == 'recibido'
+        && d.created is timestamp
+        && d.payment == null;
+    }
+
+    // Perfiles de usuarios.
     match /users/{uid} {
       allow read: if autenticado() && request.auth.uid == uid;
       allow write: if false;
     }
 
+    // Productos.
     match /products/{id} {
       allow read: if resource.data.disponible == true || autenticado();
       allow create, update: if esAdmin() && productoValido(request.resource.data);
+      allow delete: if esAdmin();
+    }
+
+    // Pedidos.
+    match /orders/{id} {
+
+      // El personal puede consultar el tablero.
+      // Un cliente puede consultar un documento individual
+      // mediante su identificador privado.
+      allow get: if true;
+      allow list: if esPersonal();
+
+      // El personal puede crear pedidos de mostrador.
+      // Los visitantes pueden crear pedidos anticipados.
+      allow create: if pedidoValido(request.resource.data, id)
+        && (
+          (esPersonal()
+            && request.resource.data.createdBy == request.auth.uid)
+          ||
+          (!autenticado()
+            && request.resource.data.kind == 'anticipado'
+            && request.resource.data.createdBy == null)
+        );
+
+      // Solo el personal puede cambiar el estado.
+      allow update: if esPersonal()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in [
+          'recibido',
+          'preparacion',
+          'listo',
+          'entregado'
+        ];
+
       allow delete: if esAdmin();
     }
   }

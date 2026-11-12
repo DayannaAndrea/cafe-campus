@@ -132,7 +132,7 @@ export default function CustomerOrder() {
 
           <Link
             className="action-button"
-            to={`/estado?turno=${ticket.ticket}`}
+            to={`/estado?id=${ticket.trackingId}`}
           >
             Seguir preparación →
           </Link>
@@ -213,7 +213,7 @@ export default function CustomerOrder() {
               Confirmar pedido anticipado →
             </button>
 
-            <small>Simulación local para la demo frontend.</small>
+            <small>Tu pedido será registrado de forma segura.</small>
           </aside>
         </form>
       )}
