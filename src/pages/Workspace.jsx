@@ -1,14 +1,160 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import MenuPage from './MenuPage';
-import NewOrder from './NewOrder';
-import OrderBoard from './OrderBoard';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import MenuPage from "./MenuPage";
+import NewOrder from "./NewOrder";
+import OrderBoard from "./OrderBoard";
+import { isAdministrator } from "../services/roleService";
 
-const nav = [{ id: 'resumen', label: 'Resumen', icon: '◫' },{id:'menu',label:'Menú',icon:'☕'},{id:'pedido',label:'Nuevo pedido',icon:'＋'},{id:'tablero',label:'Tablero',icon:'▤'}];
 export default function Workspace() {
   const { user, logout } = useAuth();
-  const [page, setPage] = useState('resumen');
-  const headings={resumen:'Resumen',menu:'Menú',pedido:'Nuevo pedido',tablero:'Tablero de pedidos'};
-  return <div className="app-shell"><aside className="sidebar"><Link to="/" className="brand"><span className="brand-mark">cc</span><span><b>Café Campus</b><small>ESPACIO DE TRABAJO</small></span></Link><div className="branch"><i/> Sede principal <small>Campus universitario</small></div><nav><span className="nav-title">GENERAL</span>{nav.map(item=><button className={`nav-item ${page===item.id?'active':''}`} key={item.id} onClick={()=>setPage(item.id)}><span>{item.icon}</span>{item.label}</button>)}<Link to="/pedir" className="nav-item"><span>◷</span>Pedido anticipado</Link></nav><div className="sidebar-bottom"><span className="open-dot"/> DEMO FRONTEND <small>Preparado para conectar API</small><button className="logout" onClick={logout}>Salir de {user?.name}</button></div></aside><main className="main"><header className="topbar"><div><span className="crumb">Café Campus</span><b>/</b> {headings[page]||page}</div><div className="topbar-meta">{new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'})}<span className="avatar">{user?.name?.slice(0,1)||'CC'}</span></div></header><section className="page"><div className="page-title"><div><span className="kicker">CAFETERÍA UNIVERSITARIA · PANEL DE OPERACIÓN</span><h1>{headings[page]||page}</h1><p>{page==='resumen'?'El espacio de trabajo está listo para las funciones del sprint.':page==='menu'?'Administra productos, precios y disponibilidad.':page==='tablero'?'Sigue cada pedido de recibido a entregado.':'Agrega productos y genera un turno al instante.'}</p></div></div>{page==='menu'?<MenuPage role={user?.role}/>:page==='pedido'?<NewOrder/>:page==='tablero'?<OrderBoard/>:<><section className="hero"><div><span>CAFÉ CAMPUS · TODOS LOS DÍAS</span><h2>Un buen día<br/>comienza aquí.</h2><p>Pedidos claros, equipo conectado y una pausa mejor para todos.</p></div><div className="hero-cup"><span>cc</span></div><i className="sparkle">✳</i></section><div className="stats"><article><span>☕</span><small>Experiencia</small><b>Un solo espacio</b></article><article><span>✦</span><small>Equipo</small><b>Listo para operar</b></article><article><span>◷</span><small>Conexión</small><b>Modo frontend</b></article></div><section className="content-card"><span className="kicker">PRÓXIMOS PASOS</span><h3>Base de Café Campus</h3><p>En los siguientes commits se agregarán las historias CAF-01 a CAF-11 como cambios separados y acumulativos.</p></section></>}</section></main></div>;
+  const admin = isAdministrator(user);
+  const [page, setPage] = useState(admin ? "menu" : "resumen");
+  const nav = admin
+    ? [{ id: "menu", label: "Menú", icon: "☕" }]
+    : [
+        { id: "resumen", label: "Resumen", icon: "◫" },
+        { id: "menu", label: "Menú", icon: "☕" },
+        { id: "pedido", label: "Nuevo pedido", icon: "＋" },
+        { id: "tablero", label: "Tablero", icon: "▤" },
+      ];
+  const section = admin ? "Panel administrador" : "Panel cajero";
+  const headings = admin
+    ? { menu: "Administrar menú" }
+    : {
+        resumen: "Resumen",
+        menu: "Menú",
+        pedido: "Nuevo pedido",
+        tablero: "Tablero de pedidos",
+      };
+  const descriptions = {
+    resumen: "Revisa los accesos de caja y continúa con la atención.",
+    menu: admin
+      ? "Actualiza productos y disponibilidad de la cafetería."
+      : "Consulta los productos disponibles.",
+    pedido: "Registra pedidos y genera turnos al instante.",
+    tablero: "Prepara los pedidos en orden.",
+  };
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <Link to={admin ? "/admin" : "/caja"} className="brand">
+          <span className="brand-mark">cc</span>
+          <span>
+            <b>Café Campus</b>
+            <small>{section.toUpperCase()}</small>
+          </span>
+        </Link>
+        <div className="branch">
+          <i /> Sede principal <small>Campus universitario</small>
+        </div>
+        <nav>
+          <span className="nav-title">{admin ? "ADMINISTRACIÓN" : "CAJA"}</span>
+          {nav.map((item) => (
+            <button
+              className={`nav-item ${page === item.id ? "active" : ""}`}
+              key={item.id}
+              onClick={() => setPage(item.id)}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+          {!admin && (
+            <Link to="/pedir" className="nav-item">
+              <span>◷</span>Pedido anticipado
+            </Link>
+          )}
+        </nav>
+        <div className="sidebar-bottom">
+          <span className="open-dot" /> DEMO FRONTEND{" "}
+          <small>Preparado para conectar API</small>
+          <button className="logout" onClick={logout}>
+            Salir de {user?.name}
+          </button>
+        </div>
+      </aside>
+      <main className="main">
+        <header className="topbar">
+          <div>
+            <span className="crumb">Café Campus</span>
+            <b>/</b> {section} <b>/</b> {headings[page]}
+          </div>
+          <div className="topbar-meta">
+            {new Date().toLocaleDateString("es-CO", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            })}
+            <span className="avatar">{user?.name?.slice(0, 1) || "CC"}</span>
+          </div>
+        </header>
+        <section className="page">
+          <div className="page-title">
+            <div>
+              <span className="kicker">
+                CAFETERÍA UNIVERSITARIA · {section.toUpperCase()}
+              </span>
+              <h1>{headings[page]}</h1>
+              <p>{descriptions[page]}</p>
+            </div>
+          </div>
+          {page === "menu" ? (
+            <MenuPage role={admin ? "administradora" : user?.role} />
+          ) : page === "pedido" ? (
+            <NewOrder />
+          ) : page === "tablero" ? (
+            <OrderBoard />
+          ) : (
+            <>
+              <section className="hero">
+                <div>
+                  <span>CAFÉ CAMPUS · OPERACIÓN DE CAJA</span>
+                  <h2>
+                    Atiende cada pedido
+                    <br />
+                    con claridad.
+                  </h2>
+                  <p>
+                    Registra órdenes y sigue su preparación desde un mismo
+                    lugar.
+                  </p>
+                </div>
+                <div className="hero-cup">
+                  <span>cc</span>
+                </div>
+                <i className="sparkle">✳</i>
+              </section>
+              <div className="stats">
+                <article>
+                  <span>＋</span>
+                  <small>Atención</small>
+                  <b>Nuevo pedido</b>
+                </article>
+                <article>
+                  <span>▤</span>
+                  <small>Preparación</small>
+                  <b>Tablero de pedidos</b>
+                </article>
+                <article>
+                  <span>◷</span>
+                  <small>Clientes</small>
+                  <b>Pedido anticipado</b>
+                </article>
+              </div>
+              <section className="content-card">
+                <span className="kicker">ACCESOS DE CAJA</span>
+                <h3>Continúa la atención</h3>
+                <p>
+                  Usa el menú de la izquierda para registrar un pedido, revisar
+                  el tablero o consultar los productos.
+                </p>
+              </section>
+            </>
+          )}
+        </section>
+      </main>
+    </div>
+  );
 }

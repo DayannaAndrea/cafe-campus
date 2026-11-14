@@ -1,8 +1,17 @@
-
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
-import { loginFirebase, logoutFirebase, getUserProfile } from '../services/authService';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase";
+import {
+  loginFirebase,
+  logoutFirebase,
+  getUserProfile,
+} from "../services/authService";
 
 const AuthContext = createContext(null);
 
@@ -22,7 +31,7 @@ export function AuthProvider({ children }) {
         const profile = await getUserProfile(firebaseUser);
         setUser(profile);
       } catch (error) {
-        console.error('Error al cargar el perfil:', error);
+        console.error("Error al cargar el perfil:", error);
         setUser(null);
         await logoutFirebase();
       } finally {
@@ -45,21 +54,17 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({ user, login, logout, loading }),
-    [user, loading]
+    [user, loading],
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const value = useContext(AuthContext);
 
   if (!value) {
-    throw new Error('useAuth requiere AuthProvider');
+    throw new Error("useAuth requiere AuthProvider");
   }
 
   return value;

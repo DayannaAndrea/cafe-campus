@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { CATEGORIES, validateProduct } from '../validation';
-import './forms.css';
+import React, { useState } from "react";
+import { CATEGORIES, validateProduct } from "../validation";
+import "./forms.css";
 
 export default function ProductForm({ initial, onSave, onClose }) {
   const [form, setForm] = useState({
-    name: initial?.name || '',
-    category: initial?.category || '',
-    price: initial?.price ?? '',
-    available: initial?.available ?? true
+    name: initial?.name || "",
+    category: initial?.category || "",
+    price: initial?.price ?? "",
+    available: initial?.available ?? true,
   });
 
   const [errors, setErrors] = useState({});
@@ -30,12 +30,12 @@ export default function ProductForm({ initial, onSave, onClose }) {
         ...initial,
         ...form,
         id: initial?.id,
-        price: Number(form.price)
+        price: Number(form.price),
       });
     } catch (error) {
-      console.error('Error al guardar el producto:', error);
+      console.error("Error al guardar el producto:", error);
       setErrors({
-        general: 'No fue posible guardar el producto. Inténtalo nuevamente.'
+        general: "No fue posible guardar el producto. Inténtalo nuevamente.",
       });
     } finally {
       setSaving(false);
@@ -45,15 +45,13 @@ export default function ProductForm({ initial, onSave, onClose }) {
   return (
     <div
       className="modal-backdrop"
-      onMouseDown={(e) =>
-        e.target === e.currentTarget && !saving && onClose()
-      }
+      onMouseDown={(e) => e.target === e.currentTarget && !saving && onClose()}
     >
       <form className="dialog" onSubmit={submit}>
         <div className="dialog-top">
           <div>
             <span className="kicker">CAF-02 · MENÚ</span>
-            <h2>{initial ? 'Editar producto' : 'Nuevo producto'}</h2>
+            <h2>{initial ? "Editar producto" : "Nuevo producto"}</h2>
           </div>
 
           <button
@@ -70,9 +68,7 @@ export default function ProductForm({ initial, onSave, onClose }) {
           Nombre
           <input
             value={form.name}
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             disabled={saving}
           />
           {errors.name && <small>{errors.name}</small>}
@@ -82,9 +78,7 @@ export default function ProductForm({ initial, onSave, onClose }) {
           Categoría
           <select
             value={form.category}
-            onChange={(e) =>
-              setForm({ ...form, category: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
             disabled={saving}
           >
             <option value="">Selecciona</option>
@@ -104,9 +98,7 @@ export default function ProductForm({ initial, onSave, onClose }) {
             min="1"
             step="1"
             value={form.price}
-            onChange={(e) =>
-              setForm({ ...form, price: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, price: e.target.value })}
             disabled={saving}
           />
           {errors.price && <small>{errors.price}</small>}
@@ -117,16 +109,12 @@ export default function ProductForm({ initial, onSave, onClose }) {
           <input
             type="checkbox"
             checked={form.available}
-            onChange={(e) =>
-              setForm({ ...form, available: e.target.checked })
-            }
+            onChange={(e) => setForm({ ...form, available: e.target.checked })}
             disabled={saving}
           />
         </label>
 
-        {errors.general && (
-          <p role="alert">{errors.general}</p>
-        )}
+        {errors.general && <p role="alert">{errors.general}</p>}
 
         <div className="dialog-actions">
           <button
@@ -138,12 +126,8 @@ export default function ProductForm({ initial, onSave, onClose }) {
             Cancelar
           </button>
 
-          <button
-            className="action-button"
-            type="submit"
-            disabled={saving}
-          >
-            {saving ? 'Guardando...' : 'Guardar producto'}
+          <button className="action-button" type="submit" disabled={saving}>
+            {saving ? "Guardando..." : "Guardar producto"}
           </button>
         </div>
       </form>

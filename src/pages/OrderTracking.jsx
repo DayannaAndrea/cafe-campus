@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import OrderStatusAnimation from '../components/OrderStatusAnimation';
-import { watchOrderByTrackingId } from '../services/ordersApi';
-import { money } from '../validation';
-import './tracking.css';
+import React, { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import OrderStatusAnimation from "../components/OrderStatusAnimation";
+import { watchOrderByTrackingId } from "../services/ordersApi";
+import { money } from "../validation";
+import "./tracking.css";
 
 const STEPS = [
-  ['recibido', 'Recibido'],
-  ['preparacion', 'En preparación'],
-  ['listo', 'Listo para recoger'],
-  ['entregado', 'Entregado']
+  ["recibido", "Recibido"],
+  ["preparacion", "En preparación"],
+  ["listo", "Listo para recoger"],
+  ["entregado", "Entregado"],
 ];
 
 export default function OrderTracking() {
   const [params] = useSearchParams();
-  const requestedId = params.get('id') || '';
+  const requestedId = params.get("id") || "";
 
   const [trackingId, setTrackingId] = useState(requestedId);
   const [searchId, setSearchId] = useState(requestedId);
@@ -43,10 +43,10 @@ export default function OrderTracking() {
         setLoading(false);
       },
       (error) => {
-        console.error('Error al consultar el pedido:', error);
+        console.error("Error al consultar el pedido:", error);
         setOrder(false);
         setLoading(false);
-      }
+      },
     );
 
     return unsubscribe;
@@ -90,8 +90,8 @@ export default function OrderTracking() {
         </h1>
 
         <p>
-          Consulta el estado de tu pedido mediante el enlace
-          de seguimiento que recibiste al confirmar tu compra.
+          Consulta el estado de tu pedido mediante el enlace de seguimiento que
+          recibiste al confirmar tu compra.
         </p>
       </section>
 
@@ -102,7 +102,9 @@ export default function OrderTracking() {
         </div>
 
         <form onSubmit={submit}>
-          <span className="tracking-hash" aria-hidden="true">#</span>
+          <span className="tracking-hash" aria-hidden="true">
+            #
+          </span>
 
           <input
             type="text"
@@ -121,17 +123,15 @@ export default function OrderTracking() {
           </button>
         </form>
 
-        {loading && (
-          <p>Consultando tu pedido...</p>
-        )}
+        {loading && <p>Consultando tu pedido...</p>}
 
         {searched && !loading && current && (
           <div className="tracking-result">
             <div className="tracking-heading">
               <b>Turno #{current.ticket}</b>
               <span>
-                {STEPS.find(([key]) => key === current.status)?.[1]
-                  || 'Estado actualizado'}
+                {STEPS.find(([key]) => key === current.status)?.[1] ||
+                  "Estado actualizado"}
               </span>
             </div>
 
@@ -143,13 +143,13 @@ export default function OrderTracking() {
 
             {current.pickup && (
               <small className="tracking-pickup">
-                Recogida:{' '}
-                {new Date(current.pickup).toLocaleString('es-CO', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  hour: '2-digit',
-                  minute: '2-digit'
+                Recogida:{" "}
+                {new Date(current.pickup).toLocaleString("es-CO", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </small>
             )}
@@ -157,17 +157,14 @@ export default function OrderTracking() {
             <div className="progress">
               <i
                 style={{
-                  width: `${(stepIndex + 1) * 25}%`
+                  width: `${(stepIndex + 1) * 25}%`,
                 }}
               />
             </div>
 
             <div className="step-labels">
               {STEPS.map(([key, label], index) => (
-                <span
-                  className={index <= stepIndex ? 'done' : ''}
-                  key={key}
-                >
+                <span className={index <= stepIndex ? "done" : ""} key={key}>
                   {label}
                 </span>
               ))}
@@ -177,8 +174,8 @@ export default function OrderTracking() {
 
         {searched && !loading && current === false && (
           <p className="not-found">
-            No encontramos ese pedido. Verifica tu enlace
-            de seguimiento e inténtalo otra vez.
+            No encontramos ese pedido. Verifica tu enlace de seguimiento e
+            inténtalo otra vez.
           </p>
         )}
 

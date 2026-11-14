@@ -1,27 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { watchProducts } from '../services/productsApi';
-import { createOrder } from '../services/ordersApi';
-import { money } from '../validation';
-import './orders.css';
+import React, { useEffect, useState } from "react";
+import { watchProducts } from "../services/productsApi";
+import { createOrder } from "../services/ordersApi";
+import { money } from "../validation";
+import "./orders.css";
 
 export default function NewOrder() {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
-  const [customer, setCustomer] = useState('');
+  const [customer, setCustomer] = useState("");
   const [created, setCreated] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Cargar productos desde Firestore en tiempo real.
   useEffect(() => {
     return watchProducts(
       (products) => {
         setProducts(products);
-        setError('');
+        setError("");
       },
       (error) => {
-        console.error('Error al cargar productos:', error);
-        setError('No fue posible cargar los productos.');
-      }
+        console.error("Error al cargar productos:", error);
+        setError("No fue posible cargar los productos.");
+      },
     );
   }, []);
 
@@ -31,19 +31,16 @@ export default function NewOrder() {
       id: p.id,
       name: p.name,
       price: p.price,
-      qty: cart[p.id]
+      qty: cart[p.id],
     }));
 
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.qty,
-    0
-  );
+  const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   function inc(id, delta) {
     setCart((current) => {
       const next = {
         ...current,
-        [id]: (current[id] || 0) + delta
+        [id]: (current[id] || 0) + delta,
       };
 
       if (next[id] <= 0) {
@@ -62,14 +59,14 @@ export default function NewOrder() {
     try {
       const order = await createOrder({
         customer: customer.trim(),
-        items
+        items,
       });
 
       setCreated(order);
-      setError('');
+      setError("");
     } catch (error) {
-      console.error('Error al crear el pedido:', error);
-      setError('No fue posible crear el pedido. Inténtalo nuevamente.');
+      console.error("Error al crear el pedido:", error);
+      setError("No fue posible crear el pedido. Inténtalo nuevamente.");
     }
   }
 
@@ -98,7 +95,7 @@ export default function NewOrder() {
             onClick={() => {
               setCreated(null);
               setCart({});
-              setCustomer('');
+              setCustomer("");
             }}
           >
             Crear siguiente pedido
@@ -161,19 +158,13 @@ export default function NewOrder() {
                   </span>
 
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => inc(item.id, -1)}
-                    >
+                    <button type="button" onClick={() => inc(item.id, -1)}>
                       −
                     </button>
 
                     <b>{item.qty}</b>
 
-                    <button
-                      type="button"
-                      onClick={() => inc(item.id, 1)}
-                    >
+                    <button type="button" onClick={() => inc(item.id, 1)}>
                       ＋
                     </button>
                   </div>
@@ -192,10 +183,7 @@ export default function NewOrder() {
               <b>{money(total)}</b>
             </div>
 
-            <button
-              className="action-button"
-              disabled={!items.length}
-            >
+            <button className="action-button" disabled={!items.length}>
               Confirmar pedido →
             </button>
           </form>

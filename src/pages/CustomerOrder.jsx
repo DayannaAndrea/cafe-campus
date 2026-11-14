@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { watchProducts } from '../services/productsApi';
-import { createOrder } from '../services/ordersApi';
-import { money } from '../validation';
-import './customer.css';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { watchProducts } from "../services/productsApi";
+import { createOrder } from "../services/ordersApi";
+import { money } from "../validation";
+import "./customer.css";
 
 export default function CustomerOrder() {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
 
   const [when, setWhen] = useState(() => {
     const date = new Date(Date.now() + 45 * 60000);
@@ -24,12 +24,12 @@ export default function CustomerOrder() {
     return watchProducts(
       (products) => {
         setProducts(products);
-        setError('');
+        setError("");
       },
       (error) => {
-        console.error('Error al cargar el catálogo:', error);
-        setError('No fue posible cargar el catálogo.');
-      }
+        console.error("Error al cargar el catálogo:", error);
+        setError("No fue posible cargar el catálogo.");
+      },
     );
   }, []);
 
@@ -45,19 +45,16 @@ export default function CustomerOrder() {
       id: p.id,
       name: p.name,
       price: p.price,
-      qty: cart[p.id]
+      qty: cart[p.id],
     }));
 
-  const total = lines.reduce(
-    (sum, item) => sum + item.price * item.qty,
-    0
-  );
+  const total = lines.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   function change(id, amount) {
     setCart((current) => {
       const next = {
         ...current,
-        [id]: (current[id] || 0) + amount
+        [id]: (current[id] || 0) + amount,
       };
 
       if (next[id] < 1) {
@@ -77,15 +74,15 @@ export default function CustomerOrder() {
       const order = await createOrder({
         customer: name.trim(),
         items: lines,
-        kind: 'anticipado',
-        pickup: new Date(when).toISOString()
+        kind: "anticipado",
+        pickup: new Date(when).toISOString(),
       });
 
       setTicket(order);
-      setError('');
+      setError("");
     } catch (error) {
-      console.error('Error al crear el pedido anticipado:', error);
-      setError('No fue posible confirmar tu pedido. Inténtalo nuevamente.');
+      console.error("Error al crear el pedido anticipado:", error);
+      setError("No fue posible confirmar tu pedido. Inténtalo nuevamente.");
     }
   }
 
@@ -120,13 +117,13 @@ export default function CustomerOrder() {
           <strong>#{ticket.ticket}</strong>
 
           <small>
-            Recogida:{' '}
-            {new Date(ticket.pickup).toLocaleString('es-CO', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              hour: '2-digit',
-              minute: '2-digit'
+            Recogida:{" "}
+            {new Date(ticket.pickup).toLocaleString("es-CO", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              hour: "2-digit",
+              minute: "2-digit",
             })}
           </small>
 
@@ -199,9 +196,7 @@ export default function CustomerOrder() {
                 </div>
               ))}
 
-              {!lines.length && (
-                <p>Selecciona productos para continuar.</p>
-              )}
+              {!lines.length && <p>Selecciona productos para continuar.</p>}
             </div>
 
             <div className="cart-total">
