@@ -2,15 +2,17 @@
 
 Plataforma web para la transformación digital de una cafetería universitaria: pedidos anticipados, tablero de pedidos en la barra y reportes de ventas. Proyecto final (Momento Evaluativo 3) del curso Metodología de Software Colaborativo, Universidad Cooperativa de Colombia, Caso A.
 
-**Versión actual:** v0.1-sprint1 · inicio de sesión con roles (CAF-01) y gestión del menú (CAF-02).
+**Sprint 1:** inicio de sesión con roles (CAF-01) y gestión del menú (CAF-02).
+
+**Sprint 2:** registro de pedidos con turno (CAF-03), tablero de pedidos por estados (CAF-04), pedido anticipado (CAF-05) y productos agotados (CAF-07).
 
 ## Equipo
 
 | Integrante | Rol |
 | --- | --- |
-| Dikson Ned Cantillo Rojas | Product Owner y Scrum Master |
-| [Compañero 1] | Developer · CAF-01 |
-| [Compañero 2] | Developer · CAF-02 |
+| Dayanna Garcia | Product Owner y Scrum Master |
+| Bleyder Martinez | Developer backend: Firebase, servicios, reglas de negocio y pruebas |
+| Jeifre Salcedo | Developer frontend: pantallas, formularios y navegación |
 
 ## Tecnología
 
@@ -23,7 +25,7 @@ Plataforma web para la transformación digital de una cafetería universitaria: 
 Requisitos: Node.js 18 o superior y un proyecto de Firebase con Authentication (correo/contraseña) y Firestore activados.
 
 ```bash
-git clone https://github.com/<usuario>/cafe-campus.git
+git clone https://github.com/DayannaAndrea/cafe-campus.git
 cd cafe-campus
 npm install
 cp .env.example .env        # llenar con los datos de la app web de Firebase
@@ -46,16 +48,12 @@ Abrir http://localhost:5173.
 
 | Usuario de prueba | Rol |
 | --- | --- |
-| admin@cafecampus.test | Administradora: agrega y edita productos |
-| cajero@cafecampus.test | Cajero: consulta el menú |
+| admin@cafecampus.test | Administradora: gestiona el menú, los precios y los productos agotados |
+| cajero@cafecampus.test | Cajero: registra pedidos y los mueve en el tablero |
 
 ## Pruebas
 
-```bash
-npm test
-```
-
-Los casos de prueba manuales están en la hoja «Casos de prueba» del libro de control.
+Los casos de prueba están en la hoja «Casos de prueba» del libro de control.
 
 ## Reglas de negocio implementadas
 
@@ -65,17 +63,17 @@ Los casos de prueba manuales están en la hoja «Casos de prueba» del libro de 
 
 ## Convenciones del equipo
 
-- Ramas: `feature/CAF-XX-descripcion`.
+- Ramas: `feature/CAF-XX-descripcion`. Si una historia tiene parte de backend y de frontend, va una rama para cada una (por ejemplo `feature/CAF-01-auth-backend` y `feature/CAF-01-login-frontend`).
 - Commits: Conventional Commits con el código de la tarjeta, por ejemplo `feat(menu): validar precio entero. Refs CAF-02`.
 - Todo cambio entra a `main` por Pull Request aprobado por otro integrante.
 
 ## Enlaces
 
-- Tablero Scrumban: [enlace]
-- Carpeta compartida: [enlace]
-- Libro de control: [enlace]
-- Canal de Discord: [enlace]
+- Repositorio: https://github.com/DayannaAndrea/cafe-campus
+- Tablero Scrumban: https://github.com/users/DayannaAndrea/projects/7
+- Carpeta compartida: https://drive.google.com/drive/folders/1brHFpaKW2RPwT4ikQ1uiLi6UXVbKZDdg?usp=drive_link
+- Libro de control: carpeta compartida › `03_Control`
 
 ## Uso de asistentes de inteligencia artificial
 
-Se usó Claude (Anthropic) como apoyo para generar la estructura inicial del proyecto, el formulario del menú y las reglas de Firestore. Cada integrante revisó y puede explicar el código que integra.
+Se usó Claude (Anthropic) como apoyo en el Sprint 1 para generar la estructura inicial del proyecto, el inicio de sesión, la gestión del menú, las reglas de Firestore, el script de datos de prueba y las pruebas automáticas. Cada integrante revisó y puede explicar el código que integra.

@@ -1,25 +1,24 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import './login-customer.css';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import "./login-customer.css";
 
 export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(event) {
     event.preventDefault();
-    setError('');
+    setError("");
     setSubmitting(true);
 
     try {
       await login(email, password);
     } catch (err) {
-      setError(err.message || 'No fue posible iniciar sesión.');
+      setError(err.message || "No fue posible iniciar sesión.");
     } finally {
       setSubmitting(false);
     }
@@ -30,7 +29,13 @@ export default function Login() {
       <section className="login-art">
         <span className="brand-mark">cc</span>
         <span className="kicker">CAFÉ CAMPUS · OPERACIÓN</span>
-        <h1>Todo fluye<br />mejor con<br /><em>un buen café.</em></h1>
+        <h1>
+          Todo fluye
+          <br />
+          mejor con
+          <br />
+          <em>un buen café.</em>
+        </h1>
         <p>Tu equipo, el menú y cada pedido en un mismo lugar.</p>
         <div className="login-cup">cc</div>
         <small>HECHO PARA TU EQUIPO</small>
@@ -64,17 +69,24 @@ export default function Login() {
             />
           </label>
 
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
 
           <button className="action-button" type="submit" disabled={submitting}>
-            {submitting ? 'Verificando...' : 'Entrar al espacio'}
+            {submitting ? "Verificando..." : "Entrar al espacio"}
             <span>→</span>
           </button>
 
           <div className="customer-entry">
             <span className="customer-entry-label">ACCESO PARA CLIENTES</span>
 
-            <Link className="customer-entry-link customer-order-link" to="/pedir">
+            <Link
+              className="customer-entry-link customer-order-link"
+              to="/pedir"
+            >
               <span className="customer-entry-icon">☕</span>
               <span className="customer-entry-copy">
                 <b>Pedido anticipado</b>
@@ -83,7 +95,10 @@ export default function Login() {
               <span className="customer-entry-arrow">→</span>
             </Link>
 
-            <Link className="customer-entry-link customer-track-link" to="/estado">
+            <Link
+              className="customer-entry-link customer-track-link"
+              to="/estado"
+            >
               <span className="customer-entry-icon">⌕</span>
               <span className="customer-entry-copy">
                 <b>Consultar estado del pedido</b>

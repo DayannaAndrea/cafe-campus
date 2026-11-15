@@ -8,12 +8,12 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp
-} from 'firebase/firestore';
+  serverTimestamp,
+} from "firebase/firestore";
 
-import { auth, db } from '../firebase';
+import { auth, db } from "../firebase";
 
-const ORDERS_COLLECTION = 'orders';
+const ORDERS_COLLECTION = "orders";
 
 // Genera un identificador aleatorio para el seguimiento privado.
 function generateTrackingId() {
@@ -40,39 +40,39 @@ function mapOrder(id, data) {
     created: data.created?.toDate
       ? data.created.toDate().toISOString()
       : data.created,
-    payment: data.payment || null
+    payment: data.payment || null,
   };
 }
 
 // Consulta todos los pedidos del personal autenticado.
 export async function getOrders() {
   const ordersRef = collection(db, ORDERS_COLLECTION);
-  const ordersQuery = query(ordersRef, orderBy('created', 'desc'));
+  const ordersQuery = query(ordersRef, orderBy("created", "desc"));
   const snapshot = await getDocs(ordersQuery);
 
   return snapshot.docs.map((orderDoc) =>
-    mapOrder(orderDoc.id, orderDoc.data())
+    mapOrder(orderDoc.id, orderDoc.data()),
   );
 }
 
 // Escucha los cambios de pedidos en tiempo real.
 export function watchOrders(onChange, onError = console.error) {
   const ordersRef = collection(db, ORDERS_COLLECTION);
-  const ordersQuery = query(ordersRef, orderBy('created', 'desc'));
+  const ordersQuery = query(ordersRef, orderBy("created", "desc"));
 
   return onSnapshot(
     ordersQuery,
     (snapshot) => {
       const orders = snapshot.docs.map((orderDoc) =>
-        mapOrder(orderDoc.id, orderDoc.data())
+        mapOrder(orderDoc.id, orderDoc.data()),
       );
 
       onChange(orders);
     },
     (error) => {
-      console.error('Error al escuchar pedidos:', error);
+      console.error("Error al escuchar pedidos:", error);
       onError(error);
-    }
+    },
   );
 }
 
@@ -80,17 +80,17 @@ export function watchOrders(onChange, onError = console.error) {
 export async function createOrder({
   customer,
   items,
-  kind = 'mostrador',
-  pickup = null
+  kind = "mostrador",
+  pickup = null,
 }) {
   if (!Array.isArray(items) || !items.length) {
-    throw new Error('El pedido debe contener productos.');
+    throw new Error("El pedido debe contener productos.");
   }
 
   // Consultar los precios actuales directamente en Firestore.
   const verifiedItems = await Promise.all(
     items.map(async (item) => {
-      const productRef = doc(db, 'products', item.id);
+      const productRef = doc(db, "products", item.id);
       const productSnapshot = await getDoc(productRef);
 
       if (!productSnapshot.exists()) {
@@ -106,21 +106,21 @@ export async function createOrder({
       const quantity = Number(item.qty);
 
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
-        throw new Error('Cantidad de producto inválida.');
+        throw new Error("Cantidad de producto inválida.");
       }
 
       return {
         id: productSnapshot.id,
         name: product.nombre,
         price: product.precio,
-        qty: quantity
+        qty: quantity,
       };
-    })
+    }),
   );
 
   const total = verifiedItems.reduce(
     (sum, item) => sum + item.price * item.qty,
-    0
+    0,
   );
 
   const trackingId = generateTrackingId();
@@ -129,15 +129,15 @@ export async function createOrder({
   const order = {
     ticket,
     trackingId,
-    customer: customer?.trim() || 'Cliente en caja',
+    customer: customer?.trim() || "Cliente en caja",
     kind,
     pickup,
     items: verifiedItems,
     total,
-    status: 'recibido',
+    status: "recibido",
     created: serverTimestamp(),
     payment: null,
-    createdBy: auth.currentUser?.uid || null
+    createdBy: auth.currentUser?.uid || null,
   };
 
   // El identificador privado también funciona como ID del documento.
@@ -148,7 +148,7 @@ export async function createOrder({
   return {
     ...order,
     id: trackingId,
-    created: new Date().toISOString()
+    created: new Date().toISOString(),
   };
 }
 
@@ -174,7 +174,7 @@ export async function getOrderByTrackingId(trackingId) {
 export function watchOrderByTrackingId(
   trackingId,
   onChange,
-  onError = console.error
+  onError = console.error,
 ) {
   const orderRef = doc(db, ORDERS_COLLECTION, trackingId);
 
@@ -182,11 +182,9 @@ export function watchOrderByTrackingId(
     orderRef,
     (snapshot) => {
       onChange(
-        snapshot.exists()
-          ? mapOrder(snapshot.id, snapshot.data())
-          : null
+        snapshot.exists() ? mapOrder(snapshot.id, snapshot.data()) : null,
       );
     },
-    onError
+    onError,
   );
 }
