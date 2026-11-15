@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" fill="none" class="scene scene-entregado">
+<style>
+.scene .woman{transform-box:fill-box;transform-origin:50% 55%;animation:woman-breathe 2.4s ease-in-out infinite}
+.scene .ponytail{transform-box:fill-box;transform-origin:15% 12%;animation:hair-sway 2.8s ease-in-out infinite}
+.scene .arm-left,.scene .arm-right{transform-box:view-box}
+.scene-recibido .arm-left{transform-origin:185px 184px;animation:receipt-wave 2.8s ease-in-out infinite}
+.scene-recibido .arm-right{transform-origin:297px 184px;animation:soft-wave 2.6s ease-in-out infinite}
+.scene-preparacion .arm-right{transform-origin:297px 184px;animation:stir-motion 1.45s ease-in-out infinite}
+.scene-listo .arm-right{transform-origin:297px 184px;animation:ready-offer 2.2s ease-in-out infinite}
+.scene-entregado .arm-right{transform-origin:297px 184px;animation:handoff 2.4s ease-in-out infinite}
+@keyframes woman-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes hair-sway{0%,100%{transform:rotate(0deg)}50%{transform:rotate(2.8deg)}}
+@keyframes receipt-wave{0%,100%{transform:rotate(0deg)}40%{transform:rotate(-3deg)}70%{transform:rotate(1deg)}}
+@keyframes soft-wave{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-5deg)}}
+@keyframes stir-motion{0%,100%{transform:rotate(0deg)}35%{transform:rotate(-7deg)}70%{transform:rotate(5deg)}}
+@keyframes ready-offer{0%,100%{transform:translateY(0)}45%{transform:translateY(-4px)}70%{transform:translateY(1px)}}
+@keyframes handoff{0%,100%{transform:translateX(0)}45%{transform:translateX(6px)}75%{transform:translateX(-1px)}}
+.scene .steam{transform-box:fill-box;transform-origin:50% 100%;animation:steam-rise 1.7s ease-in-out infinite}
+@keyframes steam-rise{0%,100%{transform:translateY(3px);opacity:.55}50%{transform:translateY(-5px);opacity:1}}
+@media(prefers-reduced-motion:reduce){.scene *{animation:none!important}}
+</style>
+<defs>
+  <linearGradient id="blouse" x1="170" y1="175" x2="300" y2="300"><stop stop-color="#FFF9F1"/><stop offset="1" stop-color="#EAD9C7"/></linearGradient>
+  <linearGradient id="apron" x1="205" y1="180" x2="275" y2="300"><stop stop-color="#A97858"/><stop offset="1" stop-color="#76503B"/></linearGradient>
+  <linearGradient id="coffee" x1="360" y1="160" x2="400" y2="235"><stop stop-color="#DFAF7D"/><stop offset="1" stop-color="#B9794D"/></linearGradient>
+</defs>
+<circle cx="240" cy="155" r="132" fill="#F6EEE6"/>
+<ellipse cx="240" cy="300" rx="154" ry="12" fill="#60422B" opacity=".12"/>
+<!-- Long ponytail stays behind the head so the whole face remains clear. -->
+
+<g class="props">  <path d="M367 173h43l-4 59c-1 8-6 12-13 12h-9c-7 0-12-4-13-12z" fill="url(#coffee)"/><path d="M362 168h53v10h-53z" fill="#79543B"/><path d="M376 188h24" stroke="#F8E9D8" stroke-width="4" stroke-linecap="round"/><path d="M413 183c20-1 20 29 0 29" stroke="#79543B" stroke-width="6" stroke-linecap="round"/><path d="M417 111c0-13 18-13 18 0s-18 24-18 24-18-11-18-24 18-13 18 0z" fill="#D98A78"/></g>
+<g class="woman">
+  <g class="ponytail">
+  <path d="M275 55c24-12 50 1 59 22 9 22-4 42-8 61-4 20 12 37 6 59-4 15-17 25-31 19-16-7-18-22-11-38 8-18-4-34-10-49-11-26 2-45-11-74z" fill="#493027"/>
+  <path d="M287 83c18 20 20 36 12 55-7 16 5 28 2 43" stroke="#674334" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+</g>
+  <!-- blouse, neck and apron -->
+  <path d="M185 184c8-13 22-22 41-24h30c18 2 32 11 41 24l-5 110H190z" fill="url(#blouse)"/>
+  <path d="M224 151h34v39h-34z" fill="#E9B28D"/>
+  <!-- clear face with a soft side part; no fringe covers the eyes -->
+  <path d="M198 81c0-35 17-55 43-55s43 20 43 55v48c0 31-17 49-43 49s-43-18-43-49z" fill="#F2C09D"/>
+  <path d="M195 91c-8-36 8-66 42-70 39-5 62 20 56 57-2 12-6 22-11 30-2-20-9-37-20-48-13 13-34 21-63 20-1 4-2 8-4 11z" fill="#3F2A23"/>
+  <path d="M217 39c14-10 32-10 47 1" stroke="#654438" stroke-width="4" stroke-linecap="round"/>
+  <!-- ears and simple, balanced facial features -->
+  <path d="M199 102c-8-4-13 1-12 9 1 7 5 11 12 11m84-20c8-4 13 1 12 9-1 7-5 11-12 11" fill="#F2C09D" stroke="#DCA886" stroke-width="2"/>
+  <path d="M211 112c4-4 9-4 13 0m32 0c4-4 9-4 13 0" stroke="#50352B" stroke-width="3.5" stroke-linecap="round"/>
+  <ellipse cx="220" cy="121" rx="3" ry="4" fill="#35251F"/><ellipse cx="263" cy="121" rx="3" ry="4" fill="#35251F"/>
+  <path d="M241 127c1 6-1 10-4 13m-10 12c8 8 20 8 28 0" stroke="#AA6253" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="207" cy="143" r="7" fill="#E99684" opacity=".42"/><circle cx="276" cy="143" r="7" fill="#E99684" opacity=".42"/>
+    <!-- Camisa de barista limpia con delantal sencillo a la cintura. -->
+  <path d="M226 179q15 13 30 0" stroke="#D9C3AC" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="241" cy="202" r="2.2" fill="#C7A17D"/><circle cx="241" cy="214" r="2.2" fill="#C7A17D"/>
+  <path d="M198 235q43 8 86 0l8 59H190z" fill="url(#apron)"/>
+  <path d="M198 224Q241 233 284 224L284 236Q241 245 198 236Z" fill="#704B37"/>
+  <path d="M198 228c-7-3-13-2-18 3m104-3c7-3 13-2 18 3" stroke="#8A5D43" stroke-width="5" stroke-linecap="round"/>
+  <rect x="220" y="250" width="42" height="29" rx="5" fill="#8A5D43" stroke="#C9946B" stroke-width="2"/>
+  <path d="M226 256h30m-30 16h30" stroke="#D6AA7C" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+  
+  <!-- arms connect to both shoulders and end in simple, readable mitten-shaped hands -->
+  <g class="arm-left"><path d="M185 184c-8 6-14 13-20 20" stroke="url(#blouse)" stroke-width="22" stroke-linecap="round"/><path d="M160 204c-7 9-12 17-15 25" stroke="#EAB491" stroke-width="16" stroke-linecap="round"/><ellipse cx="143" cy="232" rx="12" ry="7" transform="rotate(125 143 232)" fill="#F2C09D"/></g>
+  <g class="arm-right"><path d="M297 184c9 1 16 2 23 4" stroke="url(#blouse)" stroke-width="22" stroke-linecap="round"/><path d="M321 188c10 2 20 5 31 8" stroke="#EAB491" stroke-width="16" stroke-linecap="round"/><ellipse cx="353" cy="197" rx="12" ry="7" transform="rotate(12 353 197)" fill="#F2C09D"/></g>
+</g>
+<g class="sparkles"><path d="M390 76l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#D9A574"/><path d="M123 75l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#D9A574"/></g>
+</svg>
+
+
+
+
+
+
+
