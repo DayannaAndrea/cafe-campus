@@ -104,3 +104,23 @@ export async function saveProduct(product) {
 
   return newProduct.id;
 }
+
+
+// Cambia la disponibilidad de un producto.
+export async function updateProductAvailability(id, available) {
+  if (!id) {
+    throw new Error('El producto no tiene un identificador válido.');
+  }
+
+  if (typeof available !== 'boolean') {
+    throw new Error('La disponibilidad debe ser verdadera o falsa.');
+  }
+
+  const productRef = doc(db, PRODUCTS_COLLECTION, id);
+
+  await updateDoc(productRef, {
+    disponible: available,
+    actualizadoEn: serverTimestamp(),
+    actualizadoPor: auth.currentUser?.uid || null
+  });
+}

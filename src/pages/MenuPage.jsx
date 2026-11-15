@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import ProductForm from '../components/ProductForm';
 import {
   saveProduct,
-  watchProducts
+  watchProducts,
+  updateProductAvailability
 } from '../services/productsApi';
 import { CATEGORIES, money } from '../validation';
 import './menu.css';
@@ -30,12 +31,14 @@ export default function MenuPage({ role }) {
     );
   }, []);
 
+  // Filtrar productos por categoría y nombre.
   const visible = items.filter(
     (p) =>
       (category === 'Todos' || p.category === category) &&
       p.name.toLowerCase().includes(query.toLowerCase())
   );
 
+  // Crear o editar un producto.
   async function save(item) {
     try {
       await saveProduct(item);
@@ -43,6 +46,23 @@ export default function MenuPage({ role }) {
     } catch (error) {
       console.error('Error al guardar el producto:', error);
       setError('No fue posible guardar el producto.');
+    }
+  }
+
+  // Cambiar la disponibilidad de un producto.
+  async function toggleAvailability(product) {
+    try {
+      setError('');
+
+      await updateProductAvailability(
+        product.id,
+        !product.available
+      );
+    } catch (error) {
+      console.error('Error al cambiar disponibilidad:', error);
+      setError(
+        'No fue posible actualizar la disponibilidad del producto.'
+      );
     }
   }
 
@@ -95,6 +115,7 @@ export default function MenuPage({ role }) {
           >
             <div className="product-art">
               <span>{p.emoji}</span>
+
               <i className={p.available ? 'available' : 'unavailable'}>
                 {p.available ? 'Disponible' : 'Agotado'}
               </i>
@@ -108,12 +129,23 @@ export default function MenuPage({ role }) {
                 <b>{money(p.price)}</b>
 
                 {admin && (
-                  <button
-                    className="quiet-button"
-                    onClick={() => setEdit(p)}
-                  >
-                    Editar
-                  </button>
+                  <div>
+                    <button
+                      className="quiet-button"
+                      onClick={() => setEdit(p)}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      className="quiet-button"
+                      onClick={() => toggleAvailability(p)}
+                    >
+                      {p.available
+                        ? 'Marcar agotado'
+                        : 'Marcar disponible'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
