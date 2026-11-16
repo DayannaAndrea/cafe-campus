@@ -233,5 +233,48 @@ service cloud.firestore {
       // Solo la administradora puede eliminar pedidos.
       allow delete: if esAdmin();
     }
+
+    // Cierres diarios de caja.
+    match /cashClosings/{date} {
+      // Solo la administradora puede consultar cierres.
+      allow get, list: if esAdmin();
+
+      // Registrar un cierre una sola vez por fecha.
+      allow create: if esAdmin()
+        && request.resource.data.keys().hasAll([
+          'date',
+          'cashTotal',
+          'transferTotal',
+          'grandTotal',
+          'ordersCount',
+          'closedAt',
+          'closedBy'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'date',
+          'cashTotal',
+          'transferTotal',
+          'grandTotal',
+          'ordersCount',
+          'closedAt',
+          'closedBy'
+        ])
+        && request.resource.data.date == date
+        && request.resource.data.cashTotal is int
+        && request.resource.data.transferTotal is int
+        && request.resource.data.grandTotal is int
+        && request.resource.data.ordersCount is int
+        && request.resource.data.cashTotal >= 0
+        && request.resource.data.transferTotal >= 0
+        && request.resource.data.grandTotal ==
+          request.resource.data.cashTotal
+          + request.resource.data.transferTotal
+        && request.resource.data.ordersCount >= 0
+        && request.resource.data.closedAt == request.time
+        && request.resource.data.closedBy == request.auth.uid;
+
+      // Un cierre registrado no se modifica ni se elimina.
+      allow update, delete: if false;
+    }
   }
 }
