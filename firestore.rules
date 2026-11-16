@@ -3,25 +3,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Verifica si existe una sesión autenticada.
     function autenticado() {
       return request.auth != null;
     }
 
+    // Obtiene el rol del usuario autenticado.
     function rol() {
       return get(
         /databases/$(database)/documents/users/$(request.auth.uid)
       ).data.rol;
     }
 
+    // Verifica si el usuario es administrador.
     function esAdmin() {
       return autenticado() && rol() == 'administradora';
     }
 
+    // Verifica si el usuario pertenece al personal.
     function esPersonal() {
       return autenticado()
         && rol() in ['administradora', 'cajero'];
     }
 
+    // Valida la información de un producto.
     function productoValido(p) {
       return p.keys().hasAll([
           'nombre', 'categoria', 'precio', 'disponible'
@@ -41,9 +46,13 @@ service cloud.firestore {
         && p.disponible is bool;
     }
 
+    // Valida cada producto incluido en un pedido.
     function lineaValida(item) {
       let ruta = /databases/$(database)/documents/products/$(item.id);
-      return item.keys().hasAll(['id', 'name', 'price', 'qty'])
+
+      return item.keys().hasAll([
+          'id', 'name', 'price', 'qty'
+        ])
         && item.id is string
         && item.name is string
         && item.price is int
@@ -56,6 +65,7 @@ service cloud.firestore {
         && get(ruta).data.precio == item.price;
     }
 
+    // Valida las líneas del pedido.
     function lineasValidas(items) {
       return items is list
         && items.size() >= 1
@@ -68,6 +78,7 @@ service cloud.firestore {
         && (items.size() < 6 || lineaValida(items[5]));
     }
 
+    // Comprueba que el total corresponda a los productos.
     function totalValido(d) {
       return d.total is int
         && d.total > 0
@@ -82,6 +93,7 @@ service cloud.firestore {
         );
     }
 
+    // Valida la estructura y los datos de un pedido nuevo.
     function pedidoValido(d, id) {
       return d.keys().hasAll([
           'ticket',
@@ -124,6 +136,29 @@ service cloud.firestore {
         && d.payment == null;
     }
 
+    // Valida la información del pago registrado.
+    function pagoValido(p) {
+      return p is map
+        && p.keys().hasAll([
+          'method',
+          'amount',
+          'paidAt',
+          'paidBy'
+        ])
+        && p.keys().hasOnly([
+          'method',
+          'amount',
+          'paidAt',
+          'paidBy'
+        ])
+        && p.method in ['efectivo', 'transferencia']
+        && p.amount is int
+        && p.amount == resource.data.total
+        && p.paidAt is timestamp
+        && p.paidAt == request.time
+        && p.paidBy == request.auth.uid;
+    }
+
     // Perfiles de usuarios.
     match /users/{uid} {
       allow read: if autenticado() && request.auth.uid == uid;
@@ -133,42 +168,69 @@ service cloud.firestore {
     // Productos.
     match /products/{id} {
       allow read: if resource.data.disponible == true || autenticado();
-      allow create, update: if esAdmin() && productoValido(request.resource.data);
+
+      allow create, update: if esAdmin()
+        && productoValido(request.resource.data);
+
       allow delete: if esAdmin();
     }
 
     // Pedidos.
     match /orders/{id} {
 
-      // El personal puede consultar el tablero.
-      // Un cliente puede consultar un documento individual
-      // mediante su identificador privado.
+      // Consultar pedidos individuales y tablero del personal.
       allow get: if true;
       allow list: if esPersonal();
 
-      // El personal puede crear pedidos de mostrador.
-      // Los visitantes pueden crear pedidos anticipados.
+      // Crear pedidos de mostrador o anticipados.
       allow create: if pedidoValido(request.resource.data, id)
         && (
-          (esPersonal()
-            && request.resource.data.createdBy == request.auth.uid)
+          (
+            esPersonal()
+            && request.resource.data.createdBy == request.auth.uid
+          )
           ||
-          (!autenticado()
+          (
+            !autenticado()
             && request.resource.data.kind == 'anticipado'
-            && request.resource.data.createdBy == null)
+            && request.resource.data.createdBy == null
+          )
         );
 
-      // Solo el personal puede cambiar el estado.
-      allow update: if esPersonal()
-        && request.resource.data.diff(resource.data)
-          .affectedKeys().hasOnly(['status'])
-        && request.resource.data.status in [
-          'recibido',
-          'preparacion',
-          'listo',
-          'entregado'
-        ];
+      // Actualizar estados o registrar el pago al entregar.
+      allow update: if esPersonal() && (
 
+        // Avance normal del pedido.
+        // No permite entregar sin registrar el pago.
+        (
+          request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in [
+            'recibido',
+            'preparacion',
+            'listo'
+          ]
+        )
+
+        ||
+
+        // Registrar el pago y entregar el pedido simultáneamente.
+        (
+          resource.data.status == 'listo'
+          && resource.data.payment == null
+          && request.resource.data.status == 'entregado'
+
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasAll(['status', 'payment'])
+
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['status', 'payment'])
+
+          && pagoValido(request.resource.data.payment)
+        )
+      );
+
+      // Solo la administradora puede eliminar pedidos.
       allow delete: if esAdmin();
     }
   }
