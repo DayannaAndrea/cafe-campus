@@ -27,7 +27,6 @@ export default function Login() {
   return (
     <main className="login-page">
       <section className="login-art">
-        <span className="brand-mark">cc</span>
         <span className="kicker">CAFÉ CAMPUS · OPERACIÓN</span>
         <h1>
           Todo fluye
@@ -36,9 +35,8 @@ export default function Login() {
           <br />
           <em>un buen café.</em>
         </h1>
-        <p>Tu equipo, el menú y cada pedido en un mismo lugar.</p>
-        <div className="login-cup">cc</div>
-        <small>HECHO PARA TU EQUIPO</small>
+        <p>Administra el menú y organiza los pedidos de la cafetería.</p>
+        <div className="login-cup">UCC</div>
       </section>
 
       <section className="login-form-wrap">
@@ -102,7 +100,7 @@ export default function Login() {
               <span className="customer-entry-icon">⌕</span>
               <span className="customer-entry-copy">
                 <b>Consultar estado del pedido</b>
-                <small>Busca con tu número de turno</small>
+                <small>Usa el código o enlace de tu recibo</small>
               </span>
               <span className="customer-entry-arrow">→</span>
             </Link>

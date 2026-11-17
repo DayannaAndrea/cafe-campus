@@ -9,7 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  runTransaction
+  runTransaction,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";

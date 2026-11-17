@@ -10,6 +10,8 @@ export default function CustomerOrder() {
   const [cart, setCart] = useState({});
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [repeatLoading, setRepeatLoading] = useState(false);
+  const [repeatError, setRepeatError] = useState("");
 
   const [when, setWhen] = useState(() => {
     const date = new Date(Date.now() + 45 * 60000);
@@ -86,6 +88,32 @@ export default function CustomerOrder() {
     }
   }
 
+  async function repeatOrder() {
+    if (!ticket || repeatLoading) return;
+
+    setRepeatLoading(true);
+    setRepeatError("");
+
+    try {
+      const order = await createOrder({
+        customer: ticket.customer,
+        items: ticket.items,
+        kind: "anticipado",
+        pickup: new Date(Date.now() + 45 * 60000).toISOString(),
+      });
+
+      setTicket(order);
+    } catch (repeatFailure) {
+      console.error("Error al repetir el pedido:", repeatFailure);
+      setRepeatError(
+        repeatFailure.message ||
+          "No fue posible repetir el pedido. Revisa los productos e inténtalo otra vez.",
+      );
+    } finally {
+      setRepeatLoading(false);
+    }
+  }
+
   return (
     <main className="customer-page">
       <header>
@@ -98,7 +126,7 @@ export default function CustomerOrder() {
       </header>
 
       <section className="customer-hero">
-        <span className="kicker">CAF-05 · PIDE DESDE TU CELULAR</span>
+        <span className="kicker">PEDIDO ANTICIPADO</span>
         <h1>
           Tu pausa favorita,
           <br />
@@ -127,12 +155,36 @@ export default function CustomerOrder() {
             })}
           </small>
 
+          <p className="ticket-tracking-help">
+            Guarda el enlace de seguimiento para volver a consultar el estado.
+            El número de turno es para recoger tu pedido.
+          </p>
+
           <Link
             className="action-button"
             to={`/estado?id=${ticket.trackingId}`}
           >
-            Seguir preparación →
+            Consultar estado del pedido →
           </Link>
+
+          {repeatError && (
+            <p className="repeat-ticket-error" role="alert">
+              {repeatError}
+            </p>
+          )}
+
+          <button
+            className="repeat-ticket-button"
+            type="button"
+            onClick={repeatOrder}
+            disabled={repeatLoading}
+          >
+            {repeatLoading ? "Creando nuevo pedido…" : "Repetir este pedido →"}
+          </button>
+          <small className="repeat-ticket-help">
+            Se verifican los precios y la disponibilidad actuales; la recogida
+            será aproximadamente en 45 minutos.
+          </small>
         </section>
       ) : (
         <form className="customer-layout" onSubmit={submit}>

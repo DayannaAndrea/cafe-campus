@@ -12,8 +12,9 @@ export default function Workspace() {
   const admin = isAdministrator(user);
   const [page, setPage] = useState(admin ? "menu" : "resumen");
   const nav = admin
-    ? [{ id: "menu", label: "Menú", icon: "☕" },
-       { id: "cierre", label: "Cierre de caja", icon: "▣" },
+    ? [
+        { id: "menu", label: "Menú", icon: "☕" },
+        { id: "cierre", label: "Cierre de caja", icon: "▣" },
       ]
     : [
         { id: "resumen", label: "Resumen", icon: "◫" },
@@ -24,9 +25,7 @@ export default function Workspace() {
   const section = admin ? "Panel administrador" : "Panel cajero";
 
   const headings = admin
-    ? { menu: "Administrar menú",
-        cierre: "Cierre de caja",
-      }
+    ? { menu: "Administrar menú", cierre: "Cierre de caja" }
     : {
         resumen: "Resumen",
         menu: "Menú",
@@ -76,8 +75,8 @@ export default function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="open-dot" /> DEMO FRONTEND{" "}
-          <small>Preparado para conectar API</small>
+          <span className="open-dot" /> Operación activa{" "}
+          <small>Pedidos y menú centralizados</small>
           <button className="logout" onClick={logout}>
             Salir de {user?.name}
           </button>

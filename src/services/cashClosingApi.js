@@ -31,7 +31,7 @@ export async function getDailyPayments(date) {
   const paymentsQuery = query(
     collection(db, ORDERS_COLLECTION),
     where("payment.paidAt", ">=", start),
-    where("payment.paidAt", "<", end)
+    where("payment.paidAt", "<", end),
   );
 
   const snapshot = await getDocs(paymentsQuery);
@@ -73,11 +73,7 @@ export async function createCashClosing(summary) {
     throw new Error("Debes iniciar sesión para registrar el cierre.");
   }
 
-  const closingRef = doc(
-    db,
-    CLOSINGS_COLLECTION,
-    summary.date
-  );
+  const closingRef = doc(db, CLOSINGS_COLLECTION, summary.date);
 
   await runTransaction(db, async (transaction) => {
     const existing = await transaction.get(closingRef);

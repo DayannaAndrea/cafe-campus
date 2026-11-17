@@ -4,6 +4,7 @@ import {
   getCashClosing,
   getDailyPayments,
 } from "../services/cashClosingApi";
+import "./cashClosing.css";
 
 const todayInColombia = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -16,6 +17,14 @@ const formatCOP = (value = 0) =>
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
+
+const formatDateLabel = (date) =>
+  new Date(`${date}T12:00:00-05:00`).toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Bogota",
+  });
 
 export default function CashClosing() {
   const [date, setDate] = useState(todayInColombia);
@@ -53,7 +62,7 @@ export default function CashClosing() {
     if (!summary || closing || saving) return;
 
     const confirmed = window.confirm(
-      `¿Confirmas el cierre de caja del ${date}?`
+      `¿Confirmas el cierre de caja del ${date}?`,
     );
 
     if (!confirmed) return;
@@ -74,67 +83,129 @@ export default function CashClosing() {
 
   return (
     <div className="cash-closing">
-      <section className="content-card">
-        <span className="kicker">CONTROL DE CAJA</span>
-        <h3>Cierre diario</h3>
-        <p>
-          Consulta los pagos recibidos y verifica los valores
-          recaudados por cada método de pago.
-        </p>
+      <section className="closing-overview">
+        <div className="closing-overview-copy">
+          <span className="closing-eyebrow">CONTROL DE CAJA</span>
+          <h2>Cierre diario</h2>
+          <p>
+            Revisa los pagos recibidos y el recaudo de la cafetería por método
+            de pago.
+          </p>
+        </div>
 
-        <label htmlFor="closing-date">Fecha del cierre</label>
-        <input
-          id="closing-date"
-          type="date"
-          value={date}
-          max={todayInColombia()}
-          onChange={(event) => setDate(event.target.value)}
-        />
+        <div className="closing-date-control">
+          <label htmlFor="closing-date">Fecha del cierre</label>
+          <div className="closing-date-input">
+            <input
+              id="closing-date"
+              type="date"
+              value={date}
+              max={todayInColombia()}
+              onChange={(event) => setDate(event.target.value)}
+            />
+          </div>
+          <small>Selecciona un día para consultar sus recaudos.</small>
+        </div>
       </section>
 
       {loading ? (
-        <p>Consultando pagos...</p>
+        <div className="closing-feedback" role="status">
+          <span className="closing-spinner" aria-hidden="true" />
+          Consultando los pagos del día…
+        </div>
       ) : error ? (
-        <section className="content-card">
-          <p role="alert">{error}</p>
-          <button onClick={loadData}>Reintentar</button>
+        <section className="closing-error" role="alert">
+          <div>
+            <span className="closing-error-mark" aria-hidden="true">
+              !
+            </span>
+            <div>
+              <strong>No se pudo cargar el cierre</strong>
+              <p>{error}</p>
+            </div>
+          </div>
+          <button type="button" onClick={loadData}>
+            Reintentar
+          </button>
         </section>
       ) : summary ? (
         <>
-          <div className="stats">
-            <article>
-              <span>💵</span>
+          <div className="closing-metrics">
+            <article className="closing-metric">
+              <span
+                className="closing-metric-icon cash-icon"
+                aria-hidden="true"
+              >
+                $
+              </span>
               <small>Total en efectivo</small>
-              <b>{formatCOP(summary.cashTotal)}</b>
+              <strong>{formatCOP(summary.cashTotal)}</strong>
             </article>
 
-            <article>
-              <span>📲</span>
+            <article className="closing-metric">
+              <span
+                className="closing-metric-icon transfer-icon"
+                aria-hidden="true"
+              >
+                ↗
+              </span>
               <small>Total en transferencias</small>
-              <b>{formatCOP(summary.transferTotal)}</b>
+              <strong>{formatCOP(summary.transferTotal)}</strong>
             </article>
 
-            <article>
-              <span>▤</span>
+            <article className="closing-metric">
+              <span
+                className="closing-metric-icon orders-icon"
+                aria-hidden="true"
+              >
+                #
+              </span>
               <small>Pedidos pagados</small>
-              <b>{summary.ordersCount}</b>
+              <strong>{summary.ordersCount}</strong>
             </article>
           </div>
 
-          <section className="content-card">
-            <span className="kicker">RESUMEN DEL DÍA</span>
-            <h2>{formatCOP(summary.grandTotal)}</h2>
-            <p>Total recaudado el {date}.</p>
-
-            {closing ? (
+          <section className="closing-total-card">
+            <div className="closing-total-copy">
+              <span className="closing-eyebrow">RESUMEN DEL DÍA</span>
+              <h3>{formatCOP(summary.grandTotal)}</h3>
               <p>
-                Cierre registrado. Ya existe un cierre para esta fecha.
+                Recaudado el {formatDateLabel(date)} · {summary.ordersCount}{" "}
+                {summary.ordersCount === 1
+                  ? "pedido pagado"
+                  : "pedidos pagados"}
               </p>
-            ) : (
-              <button onClick={handleClose} disabled={saving}>
-                {saving ? "Registrando cierre..." : "Confirmar cierre de caja"}
-              </button>
-            )}
+            </div>
+
+            <div className="closing-total-action">
+              {closing ? (
+                <div className="closing-saved" role="status">
+                  <span aria-hidden="true">✓</span>
+                  <div>
+                    <strong>Cierre registrado</strong>
+                    <small>Este día ya quedó guardado.</small>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span className="closing-pending">CIERRE PENDIENTE</span>
+                  <button
+                    className="closing-submit"
+                    type="button"
+                    onClick={handleClose}
+                    disabled={saving}
+                  >
+                    <span>
+                      {saving ? "Registrando cierre…" : "Confirmar cierre"}
+                    </span>
+                    {!saving && <span aria-hidden="true">→</span>}
+                  </button>
+                  <small className="closing-action-hint">
+                    Solo se puede registrar un cierre por fecha.
+                  </small>
+                </>
+              )}
+            </div>
           </section>
         </>
       ) : null}

@@ -16,7 +16,9 @@ export default function MenuPage({ role }) {
   const [error, setError] = useState("");
 
   const admin = ["administradora", "administrador", "admin"].includes(
-    String(role || "").trim().toLowerCase()
+    String(role || "")
+      .trim()
+      .toLowerCase(),
   );
 
   // Escuchar los productos de Firestore en tiempo real.
@@ -29,7 +31,7 @@ export default function MenuPage({ role }) {
       (err) => {
         console.error("Error al cargar el menú:", err);
         setError("No fue posible cargar los productos.");
-      }
+      },
     );
   }, []);
 
@@ -37,7 +39,7 @@ export default function MenuPage({ role }) {
   const visible = items.filter(
     (p) =>
       (category === "Todos" || p.category === category) &&
-      p.name.toLowerCase().includes(query.toLowerCase())
+      p.name.toLowerCase().includes(query.toLowerCase()),
   );
 
   // Crear o editar un producto.
@@ -56,15 +58,10 @@ export default function MenuPage({ role }) {
   async function toggleAvailability(product) {
     try {
       setError("");
-      await updateProductAvailability(
-        product.id,
-        !product.available
-      );
+      await updateProductAvailability(product.id, !product.available);
     } catch (err) {
       console.error("Error al cambiar disponibilidad:", err);
-      setError(
-        "No fue posible actualizar la disponibilidad del producto."
-      );
+      setError("No fue posible actualizar la disponibilidad del producto.");
     }
   }
 
@@ -98,10 +95,7 @@ export default function MenuPage({ role }) {
         </div>
 
         {admin && (
-          <button
-            className="action-button"
-            onClick={() => setEdit("new")}
-          >
+          <button className="action-button" onClick={() => setEdit("new")}>
             + Nuevo producto
           </button>
         )}
@@ -131,10 +125,7 @@ export default function MenuPage({ role }) {
 
                 {admin && (
                   <div className="product-controls">
-                    <button
-                      className="quiet-button"
-                      onClick={() => setEdit(p)}
-                    >
+                    <button className="quiet-button" onClick={() => setEdit(p)}>
                       Editar
                     </button>
 
@@ -142,9 +133,7 @@ export default function MenuPage({ role }) {
                       className={`stock-toggle ${p.available ? "on" : ""}`}
                       onClick={() => toggleAvailability(p)}
                     >
-                      {p.available
-                        ? "Marcar agotado"
-                        : "Volver a ofrecer"}
+                      {p.available ? "Marcar agotado" : "Volver a ofrecer"}
                     </button>
                   </div>
                 )}

@@ -50,7 +50,7 @@ export default function ProductForm({ initial, onSave, onClose }) {
       <form className="dialog" onSubmit={submit}>
         <div className="dialog-top">
           <div>
-            <span className="kicker">CAF-02 · MENÚ</span>
+            <span className="kicker">CATÁLOGO DE PRODUCTOS</span>
             <h2>{initial ? "Editar producto" : "Nuevo producto"}</h2>
           </div>
 

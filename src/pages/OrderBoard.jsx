@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   updateOrder,
@@ -77,19 +76,14 @@ export default function OrderBoard() {
     setPaymentError("");
 
     try {
-      await registerOrderPayment(
-        selectedOrder.id,
-        paymentMethod,
-      );
+      await registerOrderPayment(selectedOrder.id, paymentMethod);
 
       setSelectedOrder(null);
       setPaymentMethod("efectivo");
       setPaymentError("");
     } catch (error) {
       console.error("Error al registrar el pago:", error);
-      setPaymentError(
-        error.message || "No fue posible registrar el pago.",
-      );
+      setPaymentError(error.message || "No fue posible registrar el pago.");
     } finally {
       setPaymentLoading(false);
     }
@@ -117,15 +111,10 @@ export default function OrderBoard() {
 
       <div className="kanban">
         {states.map(([key, label]) => {
-          const columnOrders = orders.filter(
-            (order) => order.status === key,
-          );
+          const columnOrders = orders.filter((order) => order.status === key);
 
           return (
-            <section
-              className={`kanban-col status-column-${key}`}
-              key={key}
-            >
+            <section className={`kanban-col status-column-${key}`} key={key}>
               <header>
                 <i className={`dot ${key}`} />
                 <b>{label}</b>
@@ -150,23 +139,18 @@ export default function OrderBoard() {
 
                     <p>
                       {order.items
-                        .map(
-                          (item) => `${item.qty}× ${item.name}`,
-                        )
+                        .map((item) => `${item.qty}× ${item.name}`)
                         .join(" · ")}
                     </p>
 
                     {order.pickup && (
                       <small className="board-pickup">
                         Recoge:{" "}
-                        {new Date(order.pickup).toLocaleString(
-                          "es-CO",
-                          {
-                            weekday: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
+                        {new Date(order.pickup).toLocaleString("es-CO", {
+                          weekday: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </small>
                     )}
 
@@ -174,22 +158,23 @@ export default function OrderBoard() {
                       <strong>{money(order.total)}</strong>
                       <time>
                         {order.created
-                          ? new Date(
-                              order.created,
-                            ).toLocaleTimeString("es-CO", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                          ? new Date(order.created).toLocaleTimeString(
+                              "es-CO",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )
                           : "--:--"}
                       </time>
                     </footer>
 
                     {key !== "entregado" && (
-                      <button
-                        className="advance"
-                        onClick={() => next(order)}
-                      >
-                        {key === "listo" ? "Registrar pago y entregar" : "Avanzar"} →
+                      <button className="advance" onClick={() => next(order)}>
+                        {key === "listo"
+                          ? "Registrar pago y entregar"
+                          : "Avanzar"}{" "}
+                        →
                       </button>
                     )}
                   </article>
@@ -205,10 +190,7 @@ export default function OrderBoard() {
       </div>
 
       {selectedOrder && (
-        <div
-          className="payment-overlay"
-          onClick={closePaymentModal}
-        >
+        <div className="payment-overlay" onClick={closePaymentModal}>
           <section
             className="payment-modal"
             role="dialog"
@@ -232,16 +214,12 @@ export default function OrderBoard() {
             </div>
 
             <form onSubmit={confirmPayment}>
-              <label htmlFor="payment-method">
-                Método de pago
-              </label>
+              <label htmlFor="payment-method">Método de pago</label>
 
               <select
                 id="payment-method"
                 value={paymentMethod}
-                onChange={(event) =>
-                  setPaymentMethod(event.target.value)
-                }
+                onChange={(event) => setPaymentMethod(event.target.value)}
                 disabled={paymentLoading}
               >
                 <option value="efectivo">Efectivo</option>
@@ -263,10 +241,7 @@ export default function OrderBoard() {
                   Cancelar
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={paymentLoading}
-                >
+                <button type="submit" disabled={paymentLoading}>
                   {paymentLoading
                     ? "Registrando..."
                     : "Confirmar pago y entregar"}
