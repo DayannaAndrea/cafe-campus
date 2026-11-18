@@ -5,13 +5,17 @@ import MenuPage from "./MenuPage";
 import NewOrder from "./NewOrder";
 import OrderBoard from "./OrderBoard";
 import { isAdministrator } from "../services/roleService";
+import CashClosing from "./CashClosing";
 
 export default function Workspace() {
   const { user, logout } = useAuth();
   const admin = isAdministrator(user);
   const [page, setPage] = useState(admin ? "menu" : "resumen");
   const nav = admin
-    ? [{ id: "menu", label: "Menú", icon: "☕" }]
+    ? [
+        { id: "menu", label: "Menú", icon: "☕" },
+        { id: "cierre", label: "Cierre de caja", icon: "▣" },
+      ]
     : [
         { id: "resumen", label: "Resumen", icon: "◫" },
         { id: "menu", label: "Menú", icon: "☕" },
@@ -19,14 +23,16 @@ export default function Workspace() {
         { id: "tablero", label: "Tablero", icon: "▤" },
       ];
   const section = admin ? "Panel administrador" : "Panel cajero";
+
   const headings = admin
-    ? { menu: "Administrar menú" }
+    ? { menu: "Administrar menú", cierre: "Cierre de caja" }
     : {
         resumen: "Resumen",
         menu: "Menú",
         pedido: "Nuevo pedido",
         tablero: "Tablero de pedidos",
       };
+
   const descriptions = {
     resumen: "Revisa los accesos de caja y continúa con la atención.",
     menu: admin
@@ -34,6 +40,7 @@ export default function Workspace() {
       : "Consulta los productos disponibles.",
     pedido: "Registra pedidos y genera turnos al instante.",
     tablero: "Prepara los pedidos en orden.",
+    cierre: "Consulta los recaudos y registra el cierre diario.",
   };
 
   return (
@@ -68,8 +75,8 @@ export default function Workspace() {
           )}
         </nav>
         <div className="sidebar-bottom">
-          <span className="open-dot" /> DEMO FRONTEND{" "}
-          <small>Preparado para conectar API</small>
+          <span className="open-dot" /> Operación activa{" "}
+          <small>Pedidos y menú centralizados</small>
           <button className="logout" onClick={logout}>
             Salir de {user?.name}
           </button>
@@ -102,6 +109,8 @@ export default function Workspace() {
           </div>
           {page === "menu" ? (
             <MenuPage role={admin ? "administradora" : user?.role} />
+          ) : page === "cierre" && admin ? (
+            <CashClosing />
           ) : page === "pedido" ? (
             <NewOrder />
           ) : page === "tablero" ? (

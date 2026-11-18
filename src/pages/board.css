@@ -159,3 +159,130 @@
 .kanban-col {
   min-width: 0;
 }
+
+/* Modal para registrar pagos */
+.payment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(25, 22, 19, 0.58);
+}
+
+.payment-modal {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.payment-modal h2 {
+  margin: 0 0 16px;
+  color: #60432f;
+  font-size: 20px;
+}
+
+.payment-modal > p {
+  margin: 8px 0;
+  color: #777067;
+  font-size: 13px;
+}
+
+.payment-modal > p strong {
+  color: #40372f;
+}
+
+.payment-total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 20px 0;
+  padding: 16px;
+  background: #f5eee8;
+  border-radius: 9px;
+}
+
+.payment-total span {
+  color: #85776c;
+  font-size: 12px;
+}
+
+.payment-total strong {
+  color: #78533d;
+  font-size: 24px;
+}
+
+.payment-modal form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #51483f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.payment-modal form select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ded8d1;
+  border-radius: 7px;
+  background: #fff;
+  color: #40372f;
+  font-size: 14px;
+}
+
+.payment-modal form select:focus {
+  outline: 2px solid #b58b6b;
+  outline-offset: 2px;
+}
+
+.payment-error {
+  margin: 12px 0;
+  color: #b33a32;
+  font-size: 12px;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.payment-actions button {
+  flex: 1;
+  padding: 11px 8px;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.payment-actions button:first-child {
+  background: #f0efec;
+  color: #625950;
+}
+
+.payment-actions button:last-child {
+  background: #78533d;
+  color: #fff;
+}
+
+.payment-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .payment-modal {
+    padding: 18px;
+  }
+
+  .payment-actions {
+    flex-direction: column;
+  }
+}

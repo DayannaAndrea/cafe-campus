@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -156,6 +157,59 @@ export async function createOrder({
 export async function updateOrder(id, patch) {
   const orderRef = doc(db, ORDERS_COLLECTION, id);
   await updateDoc(orderRef, patch);
+}
+
+// Registra el pago y entrega el pedido en una sola transacción.
+export async function registerOrderPayment(id, method) {
+  const validMethods = ["efectivo", "transferencia"];
+
+  if (!validMethods.includes(method)) {
+    throw new Error("Método de pago no válido.");
+  }
+
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error("Debes iniciar sesión para registrar el pago.");
+  }
+
+  const orderRef = doc(db, ORDERS_COLLECTION, id);
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnapshot = await transaction.get(orderRef);
+
+    if (!orderSnapshot.exists()) {
+      throw new Error("El pedido no existe.");
+    }
+
+    const order = orderSnapshot.data();
+
+    if (order.status !== "listo") {
+      throw new Error("Solo puedes cobrar pedidos que estén listos.");
+    }
+
+    if (order.payment !== null) {
+      throw new Error("Este pedido ya tiene un pago registrado.");
+    }
+
+    if (typeof order.total !== "number" || order.total <= 0) {
+      throw new Error("El total del pedido no es válido.");
+    }
+
+    const payment = {
+      method,
+      amount: order.total,
+      paidAt: serverTimestamp(),
+      paidBy: currentUser.uid,
+    };
+
+    transaction.update(orderRef, {
+      status: "entregado",
+      payment,
+    });
+  });
+
+  return true;
 }
 
 // Consulta un pedido mediante su identificador privado.

@@ -75,7 +75,7 @@ export default function NewOrder() {
       {created ? (
         <section className="ticket-success">
           <span className="success-seal">✓</span>
-          <span className="kicker">CAF-03 · TURNO GENERADO</span>
+          <span className="kicker">PEDIDO REGISTRADO</span>
           <h2>Pedido confirmado</h2>
           <p>Entrégale este número al cliente.</p>
           <strong>#{created.ticket}</strong>
@@ -106,7 +106,7 @@ export default function NewOrder() {
           <section className="order-catalog">
             <div className="section-heading">
               <div>
-                <span className="kicker">CAF-03 · MOSTRADOR</span>
+                <span className="kicker">NUEVO PEDIDO · MOSTRADOR</span>
                 <h2>Selecciona productos</h2>
               </div>
 

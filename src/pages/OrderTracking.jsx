@@ -12,15 +12,45 @@ const STEPS = [
   ["entregado", "Entregado"],
 ];
 
+function readTrackingCode(value) {
+  const input = value.trim();
+
+  if (!input) return "";
+
+  try {
+    if (/^https?:\/\//i.test(input) || input.includes("?")) {
+      const url = new URL(input, window.location.origin);
+      return (
+        url.searchParams.get("id") ||
+        url.searchParams.get("trackingId") ||
+        url.searchParams.get("codigo") ||
+        ""
+      );
+    }
+  } catch {
+    return "";
+  }
+
+  return input;
+}
+
+const isTurnNumber = (value) => /^\d{4,8}$/.test(value.trim());
+
 export default function OrderTracking() {
   const [params] = useSearchParams();
-  const requestedId = params.get("id") || "";
+  const requestedId =
+    params.get("id") || params.get("trackingId") || params.get("codigo") || "";
+  const requestedTurn = params.get("turno") || "";
 
   const [trackingId, setTrackingId] = useState(requestedId);
-  const [searchId, setSearchId] = useState(requestedId);
+  const [searchId, setSearchId] = useState(requestedId || requestedTurn);
   const [order, setOrder] = useState(null);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [turnNotice, setTurnNotice] = useState(
+    Boolean(requestedTurn && !requestedId),
+  );
 
   useEffect(() => {
     if (!requestedId) return;
@@ -28,13 +58,15 @@ export default function OrderTracking() {
     setTrackingId(requestedId);
     setSearchId(requestedId);
     setSearched(true);
+    setTurnNotice(false);
   }, [requestedId]);
 
   useEffect(() => {
-    if (!searched || !trackingId) return;
+    if (!searched || !trackingId) return undefined;
 
     setLoading(true);
     setOrder(null);
+    setLookupError("");
 
     const unsubscribe = watchOrderByTrackingId(
       trackingId,
@@ -44,7 +76,10 @@ export default function OrderTracking() {
       },
       (error) => {
         console.error("Error al consultar el pedido:", error);
-        setOrder(false);
+        setOrder(null);
+        setLookupError(
+          "No se pudo conectar con el seguimiento. Revisa tu conexión e inténtalo otra vez.",
+        );
         setLoading(false);
       },
     );
@@ -55,16 +90,33 @@ export default function OrderTracking() {
   function submit(event) {
     event.preventDefault();
 
-    const id = searchId.trim();
+    const code = readTrackingCode(searchId);
 
-    if (!id) return;
+    if (!code) {
+      setLookupError(
+        "Pega el enlace completo o el código de seguimiento del recibo.",
+      );
+      setSearched(false);
+      return;
+    }
 
-    setTrackingId(id);
+    if (isTurnNumber(code)) {
+      setLookupError(
+        "Ese número es tu turno para recoger. Para consultar el avance necesitas abrir o pegar el enlace de seguimiento que aparece al confirmar el pedido.",
+      );
+      setSearched(false);
+      setOrder(null);
+      setTurnNotice(false);
+      return;
+    }
+
+    setLookupError("");
+    setTurnNotice(false);
+    setTrackingId(code);
     setSearched(true);
   }
 
   const current = order && order !== false ? order : null;
-
   const stepIndex = current
     ? STEPS.findIndex(([key]) => key === current.status)
     : -1;
@@ -81,41 +133,42 @@ export default function OrderTracking() {
       </header>
 
       <section className="tracking-hero">
-        <span className="kicker">CAF-06 · SEGUIMIENTO DE PEDIDO</span>
+        <span className="kicker">SEGUIMIENTO DE PEDIDO</span>
 
         <h1>
-          Tu turno,
+          Tu pedido,
           <br />
           <em>en tiempo real.</em>
         </h1>
 
         <p>
-          Consulta el estado de tu pedido mediante el enlace de seguimiento que
-          recibiste al confirmar tu compra.
+          Abre el enlace privado que aparece al confirmar tu pedido para ver
+          cómo avanza, sin iniciar sesión.
         </p>
       </section>
 
       <section className="tracking-card">
         <div className="tracking-card-heading">
           <span className="kicker">CONSULTA TU PEDIDO</span>
-          <p>Utiliza el identificador privado de seguimiento.</p>
+          <p>Pega el código o el enlace de seguimiento de tu recibo.</p>
         </div>
 
         <form onSubmit={submit}>
           <span className="tracking-hash" aria-hidden="true">
-            #
+            ↗
           </span>
 
           <input
             type="text"
             autoComplete="off"
             required
-            aria-label="Identificador de seguimiento"
+            aria-label="Código o enlace privado de seguimiento"
             value={searchId}
             onChange={(event) => {
               setSearchId(event.target.value);
+              setLookupError("");
             }}
-            placeholder="Identificador de seguimiento"
+            placeholder="Pega aquí el código o enlace"
           />
 
           <button type="submit" className="action-button">
@@ -123,9 +176,22 @@ export default function OrderTracking() {
           </button>
         </form>
 
-        {loading && <p>Consultando tu pedido...</p>}
+        {turnNotice && (
+          <p className="not-found" role="alert">
+            El enlace recibido contiene solo el número de turno. Usa el enlace
+            privado que aparece en la confirmación del pedido.
+          </p>
+        )}
 
-        {searched && !loading && current && (
+        {lookupError && (
+          <p className="not-found" role="alert">
+            {lookupError}
+          </p>
+        )}
+
+        {loading && <p role="status">Consultando tu pedido...</p>}
+
+        {searched && !loading && !lookupError && current && (
           <div className="tracking-result">
             <div className="tracking-heading">
               <b>Turno #{current.ticket}</b>
@@ -172,10 +238,10 @@ export default function OrderTracking() {
           </div>
         )}
 
-        {searched && !loading && current === false && (
-          <p className="not-found">
-            No encontramos ese pedido. Verifica tu enlace de seguimiento e
-            inténtalo otra vez.
+        {searched && !loading && !lookupError && current === false && (
+          <p className="not-found" role="alert">
+            No encontramos ese código de seguimiento. Revisa el enlace del
+            recibo e inténtalo de nuevo.
           </p>
         )}
 

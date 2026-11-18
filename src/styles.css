@@ -436,7 +436,7 @@ a {
 }
 .login-art > .kicker {
   color: #ddc0a8;
-  margin-top: 55px;
+  margin-top: 20px;
 }
 .login-art h1 {
   font: 700 clamp(40px, 5vw, 65px) / 1.08 Manrope;
@@ -572,12 +572,8 @@ a {
     min-height: 200px;
     padding: 20px 24px;
   }
-  .login-art > .brand-mark {
-    width: 31px;
-    height: 31px;
-  }
   .login-art > .kicker {
-    margin-top: 20px;
+    margin-top: 0;
   }
   .login-art h1 {
     font-size: 29px;
