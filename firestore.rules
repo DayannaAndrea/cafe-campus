@@ -1,280 +1,316 @@
-rules_version = '2';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  runTransaction,
+} from "firebase/firestore";
 
-service cloud.firestore {
-  match /databases/{database}/documents {
+import { auth, db } from "../firebase";
 
-    // Verifica si existe una sesión autenticada.
-    function autenticado() {
-      return request.auth != null;
-    }
+const ORDERS_COLLECTION = "orders";
 
-    // Obtiene el rol del usuario autenticado.
-    function rol() {
-      return get(
-        /databases/$(database)/documents/users/$(request.auth.uid)
-      ).data.rol;
-    }
+// RN-A3: los pedidos anticipados se recogen en franjas de 15 minutos,
+// con máximo 10 pedidos por franja y al menos 15 minutos de anticipación.
+const SLOTS_COLLECTION = "slots";
+const SLOT_MINUTES = 15;
+const SLOT_CAPACITY = 10;
+const MIN_ADVANCE_MINUTES = 15;
 
-    // Verifica si el usuario es administrador.
-    function esAdmin() {
-      return autenticado() && rol() == 'administradora';
-    }
+// Inicio de la franja de 15 minutos a la que pertenece una hora.
+export function slotStart(date) {
+  const start = new Date(date);
+  start.setSeconds(0, 0);
+  start.setMinutes(Math.floor(start.getMinutes() / SLOT_MINUTES) * SLOT_MINUTES);
+  return start;
+}
 
-    // Verifica si el usuario pertenece al personal.
-    function esPersonal() {
-      return autenticado()
-        && rol() in ['administradora', 'cajero'];
-    }
+const slotId = (start) => start.toISOString().slice(0, 16);
 
-    // Valida la información de un producto.
-    function productoValido(p) {
-      return p.keys().hasAll([
-          'nombre', 'categoria', 'precio', 'disponible'
-        ])
-        && p.nombre is string
-        && p.nombre.size() >= 3
-        && p.nombre.size() <= 60
-        && p.categoria in [
-          'Bebidas calientes',
-          'Bebidas frías',
-          'Panadería',
-          'Almuerzos'
-        ]
-        && p.precio is int
-        && p.precio > 0
-        && p.precio <= 1000000
-        && p.disponible is bool;
-    }
+export const formatSlot = (date) =>
+  new Date(date).toLocaleTimeString("es-CO", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/Bogota",
+  });
 
-    // Valida cada producto incluido en un pedido.
-    function lineaValida(item) {
-      let ruta = /databases/$(database)/documents/products/$(item.id);
+// Error de franja llena: trae la siguiente franja con cupo para ofrecerla al cliente.
+export class SlotFullError extends Error {
+  constructor(full, suggested) {
+    super(
+      `La franja de las ${formatSlot(full)} ya tiene ${SLOT_CAPACITY} pedidos. ` +
+        `Te ofrecemos la de las ${formatSlot(suggested)}.`,
+    );
+    this.name = "SlotFullError";
+    this.suggested = suggested;
+  }
+}
 
-      return item.keys().hasAll([
-          'id', 'name', 'price', 'qty'
-        ])
-        && item.id is string
-        && item.name is string
-        && item.price is int
-        && item.qty is int
-        && item.qty >= 1
-        && item.qty <= 50
-        && exists(ruta)
-        && get(ruta).data.disponible == true
-        && get(ruta).data.nombre == item.name
-        && get(ruta).data.precio == item.price;
-    }
+async function nextFreeSlot(from) {
+  let start = new Date(from);
+  for (let i = 0; i < 16; i += 1) {
+    start = new Date(start.getTime() + SLOT_MINUTES * 60000);
+    const snapshot = await getDoc(doc(db, SLOTS_COLLECTION, slotId(start)));
+    if (!snapshot.exists() || snapshot.data().count < SLOT_CAPACITY) return start;
+  }
+  return start;
+}
 
-    // Valida las líneas del pedido.
-    function lineasValidas(items) {
-      return items is list
-        && items.size() >= 1
-        && items.size() <= 6
-        && lineaValida(items[0])
-        && (items.size() < 2 || lineaValida(items[1]))
-        && (items.size() < 3 || lineaValida(items[2]))
-        && (items.size() < 4 || lineaValida(items[3]))
-        && (items.size() < 5 || lineaValida(items[4]))
-        && (items.size() < 6 || lineaValida(items[5]));
-    }
+// Genera un identificador aleatorio para el seguimiento privado.
+function generateTrackingId() {
+  return crypto.randomUUID();
+}
 
-    // Comprueba que el total corresponda a los productos.
-    function totalValido(d) {
-      return d.total is int
-        && d.total > 0
-        && d.total <= 6000000
-        && d.total == (
-          d.items[0].price * d.items[0].qty
-          + (d.items.size() >= 2 ? d.items[1].price * d.items[1].qty : 0)
-          + (d.items.size() >= 3 ? d.items[2].price * d.items[2].qty : 0)
-          + (d.items.size() >= 4 ? d.items[3].price * d.items[3].qty : 0)
-          + (d.items.size() >= 5 ? d.items[4].price * d.items[4].qty : 0)
-          + (d.items.size() >= 6 ? d.items[5].price * d.items[5].qty : 0)
-        );
-    }
+// Genera un número de turno de 8 dígitos.
+function generateTicket() {
+  return String(Math.floor(10000000 + Math.random() * 90000000));
+}
 
-    // Valida la estructura y los datos de un pedido nuevo.
-    function pedidoValido(d, id) {
-      return d.keys().hasAll([
-          'ticket',
-          'trackingId',
-          'customer',
-          'kind',
-          'pickup',
-          'items',
-          'total',
-          'status',
-          'created',
-          'payment',
-          'createdBy'
-        ])
-        && d.keys().hasOnly([
-          'ticket',
-          'trackingId',
-          'customer',
-          'kind',
-          'pickup',
-          'items',
-          'total',
-          'status',
-          'created',
-          'payment',
-          'createdBy'
-        ])
-        && d.trackingId == id
-        && d.ticket is string
-        && d.ticket.matches('^[0-9]{8}$')
-        && d.customer is string
-        && d.customer.size() >= 2
-        && d.customer.size() <= 80
-        && d.kind in ['mostrador', 'anticipado']
-        && (d.pickup == null || d.pickup is string)
-        && lineasValidas(d.items)
-        && totalValido(d)
-        && d.status == 'recibido'
-        && d.created is timestamp
-        && d.payment == null;
-    }
+// Convierte los datos de Firestore al formato utilizado por el frontend.
+function mapOrder(id, data) {
+  return {
+    id,
+    ticket: data.ticket,
+    trackingId: data.trackingId,
+    customer: data.customer,
+    kind: data.kind,
+    pickup: data.pickup || null,
+    items: data.items || [],
+    total: data.total || 0,
+    status: data.status,
+    created: data.created?.toDate
+      ? data.created.toDate().toISOString()
+      : data.created,
+    payment: data.payment || null,
+  };
+}
 
-    // Valida la información del pago registrado.
-    function pagoValido(p) {
-      return p is map
-        && p.keys().hasAll([
-          'method',
-          'amount',
-          'paidAt',
-          'paidBy'
-        ])
-        && p.keys().hasOnly([
-          'method',
-          'amount',
-          'paidAt',
-          'paidBy'
-        ])
-        && p.method in ['efectivo', 'transferencia']
-        && p.amount is int
-        && p.amount == resource.data.total
-        && p.paidAt is timestamp
-        && p.paidAt == request.time
-        && p.paidBy == request.auth.uid;
-    }
+// Consulta todos los pedidos del personal autenticado.
+export async function getOrders() {
+  const ordersRef = collection(db, ORDERS_COLLECTION);
+  const ordersQuery = query(ordersRef, orderBy("created", "desc"));
+  const snapshot = await getDocs(ordersQuery);
 
-    // Perfiles de usuarios.
-    match /users/{uid} {
-      allow read: if autenticado() && request.auth.uid == uid;
-      allow write: if false;
-    }
+  return snapshot.docs.map((orderDoc) =>
+    mapOrder(orderDoc.id, orderDoc.data()),
+  );
+}
 
-    // Productos.
-    match /products/{id} {
-      allow read: if resource.data.disponible == true || autenticado();
+// Escucha los cambios de pedidos en tiempo real.
+export function watchOrders(onChange, onError = console.error) {
+  const ordersRef = collection(db, ORDERS_COLLECTION);
+  const ordersQuery = query(ordersRef, orderBy("created", "desc"));
 
-      allow create, update: if esAdmin()
-        && productoValido(request.resource.data);
-
-      allow delete: if esAdmin();
-    }
-
-    // Pedidos.
-    match /orders/{id} {
-
-      // Consultar pedidos individuales y tablero del personal.
-      allow get: if true;
-      allow list: if esPersonal();
-
-      // Crear pedidos de mostrador o anticipados.
-      allow create: if pedidoValido(request.resource.data, id)
-        && (
-          (
-            esPersonal()
-            && request.resource.data.createdBy == request.auth.uid
-          )
-          ||
-          (
-            !autenticado()
-            && request.resource.data.kind == 'anticipado'
-            && request.resource.data.createdBy == null
-          )
-        );
-
-      // Actualizar estados o registrar el pago al entregar.
-      allow update: if esPersonal() && (
-
-        // Avance normal del pedido.
-        // No permite entregar sin registrar el pago.
-        (
-          request.resource.data.diff(resource.data)
-            .affectedKeys().hasOnly(['status'])
-          && request.resource.data.status in [
-            'recibido',
-            'preparacion',
-            'listo'
-          ]
-        )
-
-        ||
-
-        // Registrar el pago y entregar el pedido simultáneamente.
-        (
-          resource.data.status == 'listo'
-          && resource.data.payment == null
-          && request.resource.data.status == 'entregado'
-
-          && request.resource.data.diff(resource.data)
-            .affectedKeys().hasAll(['status', 'payment'])
-
-          && request.resource.data.diff(resource.data)
-            .affectedKeys().hasOnly(['status', 'payment'])
-
-          && pagoValido(request.resource.data.payment)
-        )
+  return onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      const orders = snapshot.docs.map((orderDoc) =>
+        mapOrder(orderDoc.id, orderDoc.data()),
       );
 
-      // Solo la administradora puede eliminar pedidos.
-      allow delete: if esAdmin();
-    }
+      onChange(orders);
+    },
+    (error) => {
+      console.error("Error al escuchar pedidos:", error);
+      onError(error);
+    },
+  );
+}
 
-    // Cierres diarios de caja.
-    match /cashClosings/{date} {
-      // Solo la administradora puede consultar cierres.
-      allow get, list: if esAdmin();
-
-      // Registrar un cierre una sola vez por fecha.
-      allow create: if esAdmin()
-        && request.resource.data.keys().hasAll([
-          'date',
-          'cashTotal',
-          'transferTotal',
-          'grandTotal',
-          'ordersCount',
-          'closedAt',
-          'closedBy'
-        ])
-        && request.resource.data.keys().hasOnly([
-          'date',
-          'cashTotal',
-          'transferTotal',
-          'grandTotal',
-          'ordersCount',
-          'closedAt',
-          'closedBy'
-        ])
-        && request.resource.data.date == date
-        && request.resource.data.cashTotal is int
-        && request.resource.data.transferTotal is int
-        && request.resource.data.grandTotal is int
-        && request.resource.data.ordersCount is int
-        && request.resource.data.cashTotal >= 0
-        && request.resource.data.transferTotal >= 0
-        && request.resource.data.grandTotal ==
-          request.resource.data.cashTotal
-          + request.resource.data.transferTotal
-        && request.resource.data.ordersCount >= 0
-        && request.resource.data.closedAt == request.time
-        && request.resource.data.closedBy == request.auth.uid;
-
-      // Un cierre registrado no se modifica ni se elimina.
-      allow update, delete: if false;
-    }
+// Crea un pedido de mostrador o anticipado.
+export async function createOrder({
+  customer,
+  items,
+  kind = "mostrador",
+  pickup = null,
+}) {
+  if (!Array.isArray(items) || !items.length) {
+    throw new Error("El pedido debe contener productos.");
   }
+
+  // Consultar los precios actuales directamente en Firestore.
+  const verifiedItems = await Promise.all(
+    items.map(async (item) => {
+      const productRef = doc(db, "products", item.id);
+      const productSnapshot = await getDoc(productRef);
+
+      if (!productSnapshot.exists()) {
+        throw new Error(`El producto ${item.name} ya no existe.`);
+      }
+
+      const product = productSnapshot.data();
+
+      if (!product.disponible) {
+        throw new Error(`El producto ${product.nombre} no está disponible.`);
+      }
+
+      const quantity = Number(item.qty);
+
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
+        throw new Error("Cantidad de producto inválida.");
+      }
+
+      return {
+        id: productSnapshot.id,
+        name: product.nombre,
+        price: product.precio,
+        qty: quantity,
+      };
+    }),
+  );
+
+  const total = verifiedItems.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0,
+  );
+
+  const trackingId = generateTrackingId();
+  const ticket = generateTicket();
+
+  const order = {
+    ticket,
+    trackingId,
+    customer: customer?.trim() || "Cliente en caja",
+    kind,
+    pickup,
+    items: verifiedItems,
+    total,
+    status: "recibido",
+    created: serverTimestamp(),
+    payment: null,
+    createdBy: auth.currentUser?.uid || null,
+  };
+
+  // El identificador privado también funciona como ID del documento.
+  const orderRef = doc(db, ORDERS_COLLECTION, trackingId);
+
+  if (kind === "anticipado" && pickup) {
+    const pickupDate = new Date(pickup);
+    if (pickupDate.getTime() < Date.now() + MIN_ADVANCE_MINUTES * 60000) {
+      throw new Error(
+        `La hora de recogida debe ser al menos ${MIN_ADVANCE_MINUTES} minutos después de ahora.`,
+      );
+    }
+
+    // El cupo de la franja y el pedido se guardan juntos, para que dos clientes
+    // no ocupen al mismo tiempo el último cupo (RN-A3).
+    const start = slotStart(pickupDate);
+    const slotRef = doc(db, SLOTS_COLLECTION, slotId(start));
+    let full = false;
+    await runTransaction(db, async (transaction) => {
+      const slot = await transaction.get(slotRef);
+      const count = slot.exists() ? slot.data().count : 0;
+      if (count >= SLOT_CAPACITY) {
+        full = true;
+        return;
+      }
+      transaction.set(slotRef, { count: count + 1 });
+      transaction.set(orderRef, order);
+    });
+    if (full) throw new SlotFullError(start, await nextFreeSlot(start));
+  } else {
+    await setDoc(orderRef, order);
+  }
+
+  return {
+    ...order,
+    id: trackingId,
+    created: new Date().toISOString(),
+  };
+}
+
+// Actualiza el estado u otros datos permitidos del pedido.
+export async function updateOrder(id, patch) {
+  const orderRef = doc(db, ORDERS_COLLECTION, id);
+  await updateDoc(orderRef, patch);
+}
+
+// Registra el pago y entrega el pedido en una sola transacción.
+export async function registerOrderPayment(id, method) {
+  const validMethods = ["efectivo", "transferencia"];
+
+  if (!validMethods.includes(method)) {
+    throw new Error("Método de pago no válido.");
+  }
+
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error("Debes iniciar sesión para registrar el pago.");
+  }
+
+  const orderRef = doc(db, ORDERS_COLLECTION, id);
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnapshot = await transaction.get(orderRef);
+
+    if (!orderSnapshot.exists()) {
+      throw new Error("El pedido no existe.");
+    }
+
+    const order = orderSnapshot.data();
+
+    if (order.status !== "listo") {
+      throw new Error("Solo puedes cobrar pedidos que estén listos.");
+    }
+
+    if (order.payment !== null) {
+      throw new Error("Este pedido ya tiene un pago registrado.");
+    }
+
+    if (typeof order.total !== "number" || order.total <= 0) {
+      throw new Error("El total del pedido no es válido.");
+    }
+
+    const payment = {
+      method,
+      amount: order.total,
+      paidAt: serverTimestamp(),
+      paidBy: currentUser.uid,
+    };
+
+    transaction.update(orderRef, {
+      status: "entregado",
+      payment,
+    });
+  });
+
+  return true;
+}
+
+// Consulta un pedido mediante su identificador privado.
+export async function getOrderByTrackingId(trackingId) {
+  const orderRef = doc(db, ORDERS_COLLECTION, trackingId);
+  const snapshot = await getDoc(orderRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return mapOrder(snapshot.id, snapshot.data());
+}
+
+// Escucha un pedido individual en tiempo real.
+export function watchOrderByTrackingId(
+  trackingId,
+  onChange,
+  onError = console.error,
+) {
+  const orderRef = doc(db, ORDERS_COLLECTION, trackingId);
+
+  return onSnapshot(
+    orderRef,
+    (snapshot) => {
+      onChange(
+        snapshot.exists() ? mapOrder(snapshot.id, snapshot.data()) : null,
+      );
+    },
+    onError,
+  );
 }

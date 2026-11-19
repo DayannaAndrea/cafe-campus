@@ -16,6 +16,52 @@ import { auth, db } from "../firebase";
 
 const ORDERS_COLLECTION = "orders";
 
+// RN-A3: los pedidos anticipados se recogen en franjas de 15 minutos,
+// con máximo 10 pedidos por franja y al menos 15 minutos de anticipación.
+const SLOTS_COLLECTION = "slots";
+const SLOT_MINUTES = 15;
+const SLOT_CAPACITY = 10;
+const MIN_ADVANCE_MINUTES = 15;
+
+// Inicio de la franja de 15 minutos a la que pertenece una hora.
+export function slotStart(date) {
+  const start = new Date(date);
+  start.setSeconds(0, 0);
+  start.setMinutes(Math.floor(start.getMinutes() / SLOT_MINUTES) * SLOT_MINUTES);
+  return start;
+}
+
+const slotId = (start) => start.toISOString().slice(0, 16);
+
+export const formatSlot = (date) =>
+  new Date(date).toLocaleTimeString("es-CO", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/Bogota",
+  });
+
+// Error de franja llena: trae la siguiente franja con cupo para ofrecerla al cliente.
+export class SlotFullError extends Error {
+  constructor(full, suggested) {
+    super(
+      `La franja de las ${formatSlot(full)} ya tiene ${SLOT_CAPACITY} pedidos. ` +
+        `Te ofrecemos la de las ${formatSlot(suggested)}.`,
+    );
+    this.name = "SlotFullError";
+    this.suggested = suggested;
+  }
+}
+
+async function nextFreeSlot(from) {
+  let start = new Date(from);
+  for (let i = 0; i < 16; i += 1) {
+    start = new Date(start.getTime() + SLOT_MINUTES * 60000);
+    const snapshot = await getDoc(doc(db, SLOTS_COLLECTION, slotId(start)));
+    if (!snapshot.exists() || snapshot.data().count < SLOT_CAPACITY) return start;
+  }
+  return start;
+}
+
 // Genera un identificador aleatorio para el seguimiento privado.
 function generateTrackingId() {
   return crypto.randomUUID();
@@ -144,7 +190,33 @@ export async function createOrder({
   // El identificador privado también funciona como ID del documento.
   const orderRef = doc(db, ORDERS_COLLECTION, trackingId);
 
-  await setDoc(orderRef, order);
+  if (kind === "anticipado" && pickup) {
+    const pickupDate = new Date(pickup);
+    if (pickupDate.getTime() < Date.now() + MIN_ADVANCE_MINUTES * 60000) {
+      throw new Error(
+        `La hora de recogida debe ser al menos ${MIN_ADVANCE_MINUTES} minutos después de ahora.`,
+      );
+    }
+
+    // El cupo de la franja y el pedido se guardan juntos, para que dos clientes
+    // no ocupen al mismo tiempo el último cupo (RN-A3).
+    const start = slotStart(pickupDate);
+    const slotRef = doc(db, SLOTS_COLLECTION, slotId(start));
+    let full = false;
+    await runTransaction(db, async (transaction) => {
+      const slot = await transaction.get(slotRef);
+      const count = slot.exists() ? slot.data().count : 0;
+      if (count >= SLOT_CAPACITY) {
+        full = true;
+        return;
+      }
+      transaction.set(slotRef, { count: count + 1 });
+      transaction.set(orderRef, order);
+    });
+    if (full) throw new SlotFullError(start, await nextFreeSlot(start));
+  } else {
+    await setDoc(orderRef, order);
+  }
 
   return {
     ...order,
