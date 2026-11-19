@@ -234,6 +234,16 @@ service cloud.firestore {
       allow delete: if esAdmin();
     }
 
+    // RN-A3: cupo de pedidos anticipados por franja de 15 minutos (máximo 10).
+    match /slots/{slotId} {
+      allow get: if true;
+      allow create: if request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == 1;
+      allow update: if request.resource.data.keys().hasOnly(['count'])
+        && request.resource.data.count == resource.data.count + 1
+        && request.resource.data.count <= 10;
+    }
+
     // Cierres diarios de caja.
     match /cashClosings/{date} {
       // Solo la administradora puede consultar cierres.

@@ -35,11 +35,15 @@ export default function CustomerOrder() {
     );
   }, []);
 
-  const minPickup = () => {
-    const date = new Date();
+  // Convierte una fecha al formato del campo datetime-local, en hora local.
+  const toLocalInput = (value) => {
+    const date = new Date(value);
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     return date.toISOString().slice(0, 16);
   };
+
+  // RN-A3: se pide con al menos 15 minutos de anticipación.
+  const minPickup = () => toLocalInput(Date.now() + 15 * 60000);
 
   const lines = products
     .filter((p) => p.available && cart[p.id])
@@ -84,7 +88,16 @@ export default function CustomerOrder() {
       setError("");
     } catch (error) {
       console.error("Error al crear el pedido anticipado:", error);
-      setError("No fue posible confirmar tu pedido. Inténtalo nuevamente.");
+      if (error.name === "SlotFullError") {
+        // Franja llena: se ofrece la siguiente franja con cupo (RN-A3).
+        setWhen(toLocalInput(error.suggested));
+        setError(error.message);
+      } else if (!error.code) {
+        // Errores de validación propios: hora, producto agotado, cantidad.
+        setError(error.message);
+      } else {
+        setError("No fue posible confirmar tu pedido. Inténtalo nuevamente.");
+      }
     }
   }
 
