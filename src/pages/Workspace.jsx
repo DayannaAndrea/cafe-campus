@@ -6,6 +6,7 @@ import NewOrder from "./NewOrder";
 import OrderBoard from "./OrderBoard";
 import { isAdministrator } from "../services/roleService";
 import CashClosing from "./CashClosing";
+import SalesReport from "./SalesReport";
 
 export default function Workspace() {
   const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ export default function Workspace() {
     ? [
         { id: "menu", label: "Menú", icon: "☕" },
         { id: "cierre", label: "Cierre de caja", icon: "▣" },
+        { id: "ventas", label: "Ventas por franja", icon: "▥" },
       ]
     : [
         { id: "resumen", label: "Resumen", icon: "◫" },
@@ -25,7 +27,7 @@ export default function Workspace() {
   const section = admin ? "Panel administrador" : "Panel cajero";
 
   const headings = admin
-    ? { menu: "Administrar menú", cierre: "Cierre de caja" }
+    ? { menu: "Administrar menú", cierre: "Cierre de caja", ventas: "Ventas por franja" }
     : {
         resumen: "Resumen",
         menu: "Menú",
@@ -41,6 +43,7 @@ export default function Workspace() {
     pedido: "Registra pedidos y genera turnos al instante.",
     tablero: "Prepara los pedidos en orden.",
     cierre: "Consulta los recaudos y registra el cierre diario.",
+    ventas: "Revisa qué se vendió por producto y por franja para decidir cuánto preparar.",
   };
 
   return (
@@ -111,6 +114,8 @@ export default function Workspace() {
             <MenuPage role={admin ? "administradora" : user?.role} />
           ) : page === "cierre" && admin ? (
             <CashClosing />
+          ) : page === "ventas" && admin ? (
+            <SalesReport />
           ) : page === "pedido" ? (
             <NewOrder />
           ) : page === "tablero" ? (
